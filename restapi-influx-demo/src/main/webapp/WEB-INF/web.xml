@@ -46,7 +46,7 @@ http://www.springmodules.org/schema/cache/springmodules-ehcache.xsd"
     </filter-mapping>
 
     <filter>
-        <filter-name>apiFilter</filter-name>
+        <filter-name>logFilter</filter-name>
         <filter-class>
             org.springframework.web.filter.DelegatingFilterProxy
         </filter-class>
@@ -57,7 +57,7 @@ http://www.springmodules.org/schema/cache/springmodules-ehcache.xsd"
         <async-supported>true</async-supported>
     </filter>
     <filter-mapping>
-        <filter-name>apiFilter</filter-name>
+        <filter-name>logFilter</filter-name>
         <url-pattern>/*</url-pattern>
         <dispatcher>REQUEST</dispatcher>
         <dispatcher>ASYNC</dispatcher>

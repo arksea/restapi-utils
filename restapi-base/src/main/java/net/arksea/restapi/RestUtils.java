@@ -27,7 +27,7 @@ public final class RestUtils {
 
     public static <T> String createResult(int code, T value, String reqid) {
         try {
-            final RestResult<T> result = new RestResult(code, value, reqid);
+            final RestResult<T> result = new RestResult<>(code, value, reqid);
             return objectMapper.writeValueAsString(result);
         } catch (JsonProcessingException ex) {
             throw new RestException("Object result to json failed", ex);

@@ -1,9 +1,9 @@
 package net.arksea.restapi.utils.influx.demo;
 
 import akka.actor.ActorSystem;
-import net.arksea.restapi.utils.influx.DefaultHttpRequestGroup;
 import net.arksea.restapi.utils.influx.IRequestLogger;
 import net.arksea.restapi.utils.influx.RequestLogFilter;
+import net.arksea.restapi.utils.influx.RequestLogFilterBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.annotation.Bean;
@@ -15,32 +15,33 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ServiceFactory {
-    private static final Logger logger = LogManager.getLogger(ServiceFactory.class);
-
+    private static Logger logger = LogManager.getLogger(ServiceFactory.class);
     @Bean
     ActorSystem createSystem() {
         return ActorSystem.apply();
     }
 
-    @Bean(name="apiFilter")
+    @Bean(name="logFilter")
     RequestLogFilter createRequestLogFilter() {
         IRequestLogger reqLogger = new IRequestLogger() {
             @Override
             public void respond(String uri, String group, int status, long respondTime) {
-                logger.trace("Trace RequestLogger.respond: uri={},group={},status={},time={}",uri,group,status,respondTime);
+                logger.info("RequestLogger.respond: uri={},group={},status={},time={}",uri,group,status,respondTime);
             }
-
             @Override
             public void request(String uri, String group) {
-                logger.trace("Trace RequestLogger.request: uri={},group={}",uri,group);
+                logger.info("RequestLogger.request: uri={},group={}",uri,group);
             }
-
             @Override
             public void writeLogs() {
-                logger.trace("Trace RequestLogger.writeLogs");
+                logger.info("RequestLogger.writeLogs");
             }
         };
-        return new RequestLogFilter(new DefaultHttpRequestGroup(), reqLogger);
+        return new RequestLogFilterBuilder()
+                .addIgnoreUri("/heartbeat")
+                .setRequestGroupHeaderName("productId")
+                .setRequestLogger(reqLogger)
+                .build();
     }
 
 }

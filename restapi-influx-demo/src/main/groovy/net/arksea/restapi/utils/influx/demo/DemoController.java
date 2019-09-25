@@ -86,7 +86,7 @@ public class DemoController {
     public DeferredResult<String> getAsyncErr(final HttpServletResponse httpResonpse) {
         DeferredResult<String> result = new DeferredResult<String>();
         httpResonpse.setStatus(508);
-        result.setResult(RestUtils.createMsgResult(1,new RestException(HttpStatus.BAD_REQUEST,"async-error"),"1234353"));
+        result.setResult(RestUtils.createResult(1,new RestException(HttpStatus.BAD_REQUEST,"async-error"),"1234353"));
         return result;
     }
 
@@ -123,7 +123,7 @@ public class DemoController {
         DeferredResult<String> result = new DeferredResult<String>();
         Futures.future(() -> {
             Thread.sleep(100);
-            result.setResult(RestUtils.createMsgResult(0,"hello world","1234354"));
+            result.setResult(RestUtils.createResult(0,"hello world","1234354"));
             return 1;
         },system.dispatcher());
         return result;
@@ -140,7 +140,7 @@ public class DemoController {
         Futures.future(() -> {
             Thread.sleep(100);
             httpResonpse.setStatus(509);
-            result.setResult(RestUtils.createMsgResult(1,"async-f-err","1234353"));
+            result.setResult(RestUtils.createResult(1,"async-f-err","1234353"));
             return 1;
         },system.dispatcher());
         return result;

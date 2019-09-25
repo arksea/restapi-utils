@@ -1,19 +1,17 @@
 apply plugin: 'base'
 apply plugin: 'java'
 
-
 group = 'net.arksea'
-version = '1.0.3-SNAPSHOT'
+version = '1.0.4-SNAPSHOT'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
-
 repositories {
     mavenLocal()
-    maven { url "http://172.17.149.8:8081/nexus/content/groups/public/" }
+    maven { url "http://nexus.arksea.net:8081/nexus/content/groups/public/" }
     maven { url "http://repo.maven.apache.org/maven2" }
 }
 
@@ -22,6 +20,5 @@ dependencies {
     compile 'org.apache.logging.log4j:log4j-core:2.5'
     testCompile 'junit:junit:4.11'
 }
-
 
 test.testLogging.showStandardStreams = true
