@@ -1,0 +1,9 @@
+/.gradle
+/.idea
+/restapi-log-req/build
+*.log
+/restapi-base/build
+/restapi-influx/build
+/restapi-influx-demo/build
+/restapi-influx-demo/tomcat/webapps/demo
+/build

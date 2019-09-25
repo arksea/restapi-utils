@@ -1,0 +1,4 @@
+rootProject.name = 'restapi-utils'
+include 'restapi-base'
+include 'restapi-influx'
+include 'restapi-influx-demo'

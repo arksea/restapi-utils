@@ -1,0 +1,74 @@
+apply plugin: 'war'
+apply plugin: 'groovy'
+
+description = """restapi-influx demo"""
+
+[compileJava, compileTestJava, compileGroovy, compileTestGroovy]*.options*.encoding = 'UTF-8'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+dependencies {
+    compile project(':restapi-base')
+    compile project(':restapi-influx')
+    compile 'org.springframework:spring-core:4.3.9.RELEASE'
+    compile 'org.springframework:spring-context:4.3.9.RELEASE'
+    compile 'org.springframework:spring-context-support:4.3.9.RELEASE'
+    compile 'org.springframework:spring-webmvc:4.3.9.RELEASE'
+    compile 'commons-codec:commons-codec:1.9'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.6.0'
+    compile 'org.codehaus.groovy:groovy-all:2.4.4'
+    testCompile 'junit:junit:4.11'
+    testCompile 'org.springframework:spring-test:4.2.2.RELEASE'
+    providedCompile  'javax.servlet:javax.servlet-api:3.1.0'
+}
+
+
+//拷贝部署文件到指定目录
+task publishDev {
+    dependsOn build
+    doLast {
+        //拷贝前先删除部署目录
+        delete('./tomcat/webapps/demo')
+        copy{ //拷贝本项目WEB相关文件
+            from 'src/main/webapp/'
+            into './tomcat/webapps/demo'
+        }
+        copy{ //拷贝本项目WEB相关文件
+            from 'src/main/angular/demo/dist'
+            into './tomcat/webapps/demo'
+        }
+        copy{ //拷贝依赖库
+            from configurations.runtime
+            into './tomcat/webapps/demo/WEB-INF/lib'
+        }
+        delete('tomcat/webapps/demo/WEB-INF/lib/xml-apis-1.0.b2.jar')
+        copy{ //拷贝类 IDEA2017.3的版本改为此目录
+            from 'build/classes/main/'
+            into './tomcat/webapps/demo/WEB-INF/classes'
+        }
+        copy{ //拷贝类IDEA2017.1的版本的目录
+            from 'build/classes/groovy/main/'
+            into './tomcat/webapps/demo/WEB-INF/classes'
+        }
+        copy{ //拷贝资源
+            from 'build/resources/main/'
+            into './tomcat/webapps/demo/WEB-INF/classes'
+        }
+        copy{ //拷贝资源
+            from 'build/resources/test/'
+            into './tomcat/webapps/demo/WEB-INF/classes'
+        }
+        copy{ //拷贝META-INF
+            from 'build/tmp/war/'
+            into './tomcat/webapps/demo/META-INF/'
+        }
+    }
+}
+
+task startTomcat(type: Exec) {
+    dependsOn publishDev
+    workingDir './tomcat'
+    commandLine 'cmd', '/c', '.\\bin\\startup.bat'
+    environment CATALINA_HOME: 'e:\\github\\restapi-utils\\restapi-influx-demo\\tomcat'
+}
