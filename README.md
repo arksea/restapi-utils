@@ -2,16 +2,16 @@
 
 ### 一、RestAPI请求监控
 
-#####功能
+##### 功能
 
     通过Servlet Filter统计RestAPI请求响应时间与成功率,每分钟将统计的数据写入InfluxDB
 
-#####使用Grafana查看的效果图
+##### 使用Grafana查看的效果图
 ![image](./docs/images/grafana1.png)
 
-####代码与配置
+#### 代码与配置
 
-#####1、初始化RequestLogFilter对象
+##### 1、初始化RequestLogFilter对象
 ```java
 @Component
 public class ServiceFactory {
@@ -38,7 +38,7 @@ public class ServiceFactory {
 }
 ```
 
-#####2、修改web.xml配置filter
+##### 2、修改web.xml配置filter
 ```xml
 <xml>
     <filter>
@@ -59,7 +59,7 @@ public class ServiceFactory {
 </xml>
 ```
 
-#####3、InfluxDB配置
+##### 3、InfluxDB配置
 
 新建数据库，设置保存时间为3天
 
@@ -102,20 +102,20 @@ net.arksea.restapi.RestException: Bad Request
         
 ```
 
-#####1、基本配置
+##### 1、基本配置
 在Spring自动扫描路径中定义RestExceptionHandler类
 ```java
 @ControllerAdvice
 public class RestExceptionHandler extends net.arksea.restapi.RestExceptionHandler {}
 ```
 
-#####2、4xx错误与5xx错误日志分别记录
+##### 2、4xx错误与5xx错误日志分别记录
 
 RestExceptionHandler将4xx类的异常记录为Debug级别，使用的Logger name为net.arksea.restapi.logger.InternalError；
 5xx类的异常记录为Warning级别，使用Logger name为net.arksea.restapi.logger.BadRequest
 需要时可以将4xx异常写到独立的文件：
 
-######修改log4j2.xml
+###### 修改log4j2.xml
 ```
 ...
 <Logger name="net.arksea.restapi.logger.BadRequest" level="debug" additivity="false">
