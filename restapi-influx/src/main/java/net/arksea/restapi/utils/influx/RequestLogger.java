@@ -2,7 +2,6 @@ package net.arksea.restapi.utils.influx;
 
 import akka.dispatch.OnComplete;
 import net.arksea.httpclient.asker.FuturedHttpClient;
-import net.arksea.httpclient.asker.HttpAsk;
 import net.arksea.httpclient.asker.HttpResult;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -142,7 +141,7 @@ public class RequestLogger implements IRequestLogger {
         logger.debug(body);
         post.setEntity(new StringEntity(body, "UTF-8"));
         logCount.incrementAndGet();
-        futuredHttpClient.ask(new HttpAsk("request", post), timeout).onComplete(
+        futuredHttpClient.ask(post, "request", timeout).onComplete(
             new OnComplete<HttpResult>() {
                 public void onComplete(Throwable ex, HttpResult ret) throws Throwable {
                     if (ex == null) {
