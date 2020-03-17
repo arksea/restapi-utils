@@ -71,11 +71,26 @@ public class RequestLogFilter implements Filter {
         if (req.getAttribute("-restapi-start-time") == null) { //防止配置有误，多次调用此filter
             getGroupNameAndDoFilter(req, resp, chain);
         } else {
-            //当Controller为异步方法，在设置respond结果后，无论是正确的结果还是错误的结果，ASYNC的doFilter将被调用
-            //当Controller为异步方法，在Controller超时没有设置结果时，逻辑也将走到此处
+            //1、当Controller为异步方法，在设置respond结果后，无论是正确的结果还是错误的结果，ASYNC的doFilter将被调用，逻辑将走到此处
+            //2、当Controller为异步方法，在Controller超时没有设置结果时，ASYNC的doFilter会被调用，逻辑将走到此处
             chain.doFilter(req, resp);
             int status = resp.getStatus();
             LOGGER.trace("------------------------{},{}",status,resp.getContentType());
+            if (req.getAttribute("-restapi-error-logged") == null) { //RestExceptionHandler未记录此异常，时写一条日志
+                //何时出现
+                //1、没有配置RestExceptionHandler时
+                //2、使用异步模式，DeferredResult.setResult一个status不为200的结果时，
+                //   而非DeferredResult.setErrorResult一个异常(这种情况RestExceptionHandler将会拦截到这个异常并处理)
+                HttpStatus retStatus = HttpStatus.valueOf(status);
+                RestException ex = new RestException("Unhandled error");
+                String alarmMsg = RestUtils.getRequestLogInfo(ex, retStatus, req, "");
+                //外部错误日志用debug级别
+                if (requestGroup.logDebugLevel(retStatus, ex)) {
+                    BADREQ_LOGGER.debug(alarmMsg, ex);
+                } else {
+                    LOGGER.warn(alarmMsg, ex);
+                }
+            }
             Long requestStartTime = (Long) req.getAttribute("-restapi-start-time");
             String name = (String) req.getAttribute("-restapi-name");
             String group = (String) req.getAttribute("-restapi-group");

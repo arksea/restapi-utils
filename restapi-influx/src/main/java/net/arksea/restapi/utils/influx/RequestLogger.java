@@ -71,7 +71,7 @@ public class RequestLogger implements IRequestLogger {
 
     @Override
     public void respond(String uri, String group, int status, long respondTime) {
-        logger.trace("Trace RequestLogger.respond: uri={},group={},status={},time={}",uri,group,status,respondTime);
+        logger.trace("Trace RequestLogger.respond: uri={},group={},status={},time={}",uri,group,status,respondTime,new Exception("trace"));
         Counter counter = getCounter(uri, group);
         counter.respondTime.addAndGet(respondTime);
         if (status >= 300 && status < 400) {
@@ -87,7 +87,7 @@ public class RequestLogger implements IRequestLogger {
 
     @Override
     public void request(String uri, String group) {
-        logger.trace("Trace RequestLogger.request: uri={},group={}",uri,group);
+        logger.trace("Trace RequestLogger.request: uri={},group={}",uri,group,new Exception("trace"));
         Counter counter = getCounter(uri, group);
         counter.requestCount.incrementAndGet();
     }

@@ -132,6 +132,7 @@ public class RestExceptionHandler {
         } else {
             LOGGER.warn(alarmMsg, ex);
         }
+        request.setAttribute("-restapi-error-logged","true", WebRequest.SCOPE_REQUEST);
         final String reqid = (String) request.getAttribute("restapi-requestid", WebRequest.SCOPE_REQUEST);
         final HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/json; charset=UTF-8"));
@@ -141,6 +142,10 @@ public class RestExceptionHandler {
 
     public static boolean logDebugLevel(HttpStatus status, Throwable ex) {
         int value = status.value();
+        return logDebugLevel(value, ex);
+    }
+
+    public static boolean logDebugLevel(int value, Throwable ex) {
         if (value >= 400 && value < 500) {
             return true;
         }
