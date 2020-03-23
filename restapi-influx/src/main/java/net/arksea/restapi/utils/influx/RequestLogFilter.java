@@ -76,7 +76,7 @@ public class RequestLogFilter implements Filter {
             chain.doFilter(req, resp);
             int status = resp.getStatus();
             LOGGER.trace("------------------------{},{}",status,resp.getContentType());
-            if (req.getAttribute("-restapi-error-logged") == null) { //RestExceptionHandler未记录此异常，时写一条日志
+            if (status >= 400 && status <=600 && req.getAttribute("-restapi-error-logged") == null) { //RestExceptionHandler未记录此异常，时写一条日志
                 //何时出现
                 //1、没有配置RestExceptionHandler时
                 //2、使用异步模式，DeferredResult.setResult一个status不为200的结果时，
