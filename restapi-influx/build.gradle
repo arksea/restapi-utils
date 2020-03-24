@@ -11,6 +11,7 @@ description = """写REST-API请求日志到Influxdb"""
 dependencies {
     compile project(':restapi-base')
     compile 'net.arksea:httpclient-asker:1.1.0-SNAPSHOT'
+    compile 'commons-dbcp:commons-dbcp:1.4'
 }
 
 configure(install.repositories.mavenInstaller) {

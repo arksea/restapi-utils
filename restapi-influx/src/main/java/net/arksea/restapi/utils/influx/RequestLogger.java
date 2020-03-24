@@ -124,7 +124,7 @@ public class RequestLogger implements IRequestLogger {
                 String name = e.getKey().getLeft();
                 String group = e.getKey().getRight();
                 sb.append(tableName).append(",group=").append(format(group))
-                    .append(",name=").append(name.toString())
+                    .append(",name=").append(name)
                     .append(" request=").append(req)
                     .append(",respond2xx=").append(respond2xx)
                     .append(",respond3xx=").append(respond3xx)
