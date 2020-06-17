@@ -25,13 +25,15 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.multiaction.NoSuchRequestHandlingMethodException;
 import org.springframework.web.util.NestedServletException;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * 处理Restful异常.
  */
 @ControllerAdvice
 public class RestExceptionHandler {
-    private static final Logger LOGGER = LogManager.getLogger("net.arksea.restapi.logger.InternalError");
-    private static final Logger BADREQ_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.BadRequest");
+    protected static final Logger LOGGER = LogManager.getLogger("net.arksea.restapi.logger.InternalError");
+    protected static final Logger BADREQ_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.BadRequest");
     /**
      * 处理RestException.
      * @param ex
@@ -160,7 +162,7 @@ public class RestExceptionHandler {
         return false;
     }
 
-    protected HttpStatus getStatus(HttpStatus status, Exception ex) {
+    public static HttpStatus getStatus(HttpStatus status, Throwable ex) {
         if ("org.apache.catalina.connector.ClientAbortException".equals(ex.getClass().getName())) {
             return HttpStatus.valueOf(400);
         } else {
@@ -168,4 +170,14 @@ public class RestExceptionHandler {
         }
     }
 
+    public static void logRequestException(HttpStatus status, Throwable ex, HttpServletRequest request) {
+        String alarmMsg = RestUtils.getRequestLogInfo(ex,status,request,"");
+        //外部错误日志用debug级别
+        HttpStatus retStatus = getStatus(status, ex);
+        if (logDebugLevel(retStatus, ex)) {
+            BADREQ_LOGGER.debug(alarmMsg, ex);
+        } else {
+            LOGGER.warn(alarmMsg, ex);
+        }
+    }
 }
