@@ -1,0 +1,47 @@
+description = """Demo: DAO Request Log"""
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+dependencies {
+    compile project(':restapi-influx')
+    compile 'org.springframework:spring-core:4.3.27.RELEASE'
+    compile 'org.springframework:spring-context:4.3.27.RELEASE'
+    compile 'org.springframework:spring-context-support:4.3.27.RELEASE'
+    compile 'org.springframework.data:spring-data-jpa:1.11.4.RELEASE'
+    compile 'commons-codec:commons-codec:1.9'
+
+    compile  'org.hibernate:hibernate-entitymanager:4.3.5.Final'
+    compile  'org.hibernate:hibernate-validator:5.0.3.Final'
+
+    runtime 'mysql:mysql-connector-java:5.1.22'
+    runtime 'org.apache.tomcat:tomcat-dbcp:8.0.30'
+    runtime 'commons-dbcp:commons-dbcp:1.4'
+    runtime 'org.apache.commons:commons-pool2:2.2'
+
+    testCompile 'junit:junit:4.11'
+    testCompile 'org.springframework:spring-test:4.2.2.RELEASE'
+}
+
+
+//IDE中运行与调试的配置
+def runMainClass = 'net.arksea.restapi.utils.influx.demo.DemoMain'
+//配置在IDE中运行及调试时的参数
+
+task run(type: JavaExec, dependsOn: 'build') {
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.runtimeClasspath
+    standardInput = System.in
+    standardOutput = System.out
+    main = runMainClass
+}
+
+task debug(type: JavaExec, dependsOn: 'build') {
+    classpath = sourceSets.test.runtimeClasspath + sourceSets.main.runtimeClasspath
+    standardInput = System.in
+    standardOutput = System.out
+    debug = true
+    main = runMainClass
+}
+
