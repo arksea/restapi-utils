@@ -25,11 +25,11 @@ public class DaoRequestLogProxyFactory {
 
     @PostConstruct
     void init() {
-        requestLogProxyCreator = new RequestLogProxyCreator();
+        requestLogProxyCreator = new RequestLogProxyCreator(requestLogger);
     }
 
     @Bean("demoEntityDaoProxy")
     DemoEntityDao creatDemoEntityDaoProxy() {
-        return requestLogProxyCreator.newInstance(requestLogger, demoEntityDao, DemoEntityDao.class);
+        return requestLogProxyCreator.newInstance(demoEntityDao, DemoEntityDao.class);
     }
 }

@@ -18,10 +18,12 @@ public class RequestLogProxy<T extends U, U> implements InvocationHandler {
     private final IRequestLogger requestLogger;
     private final Set<String> targetMethods;
     private final String interfaceName;
+    private IRequestLogFilter requestLogFilter;
 
-    public RequestLogProxy(IRequestLogger requestLogger, T target, Class<U> targetInterface) {
+    public RequestLogProxy(IRequestLogger requestLogger, T target, Class<U> targetInterface, IRequestLogFilter requestLogFilter) {
         this.target = target;
         this.targetInterface = targetInterface;
+        this.requestLogFilter = requestLogFilter;
         this.interfaceName = targetInterface.getSimpleName();
         this.requestLogger = requestLogger;
         targetMethods = new HashSet<>();
@@ -35,9 +37,9 @@ public class RequestLogProxy<T extends U, U> implements InvocationHandler {
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         String methodName = method.getName();
-        if (needLog(methodName)) {
+        if (requestLogFilter.needLog(methodName)) {
             long start = System.currentTimeMillis();
-            String group = getGroupByMethodName(methodName);
+            String group = requestLogFilter.getGroupByMethodName(methodName);
             try {
                 requestLogger.request(interfaceName, group);
                 Object ret = method.invoke(target, args);
@@ -52,13 +54,5 @@ public class RequestLogProxy<T extends U, U> implements InvocationHandler {
         } else {
             return method.invoke(target, args);
         }
-    }
-
-    protected String getGroupByMethodName(String methodName) {
-        return methodName;
-    }
-
-    private boolean needLog(String methodName) {
-        return targetMethods.contains(methodName);
     }
 }
