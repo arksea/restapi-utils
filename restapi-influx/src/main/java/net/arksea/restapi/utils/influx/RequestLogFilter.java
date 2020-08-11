@@ -82,7 +82,7 @@ public class RequestLogFilter implements Filter {
                 //2、使用异步模式，DeferredResult.setResult一个status不为200的结果时，
                 //   而非DeferredResult.setErrorResult一个异常(这种情况RestExceptionHandler将会拦截到这个异常并处理)
                 HttpStatus retStatus = HttpStatus.valueOf(status);
-                RestException ex = new RestException("Unhandled error");
+                RestException ex = new RestException("error result");
                 String alarmMsg = RestUtils.getRequestLogInfo(ex, retStatus, req, "");
                 //外部错误日志用debug级别
                 if (requestGroup.logDebugLevel(retStatus, ex)) {
