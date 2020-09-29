@@ -5,4 +5,5 @@ package net.arksea.restapi.utils.influx;
  */
 public interface IRequestLogProxyCreator {
     <T extends U, U> T newInstance(T target, Class<U> targetInterface);
+    <T extends  U,U> T newInstance(T target, Class<U> targetInterface, String logName);
 }

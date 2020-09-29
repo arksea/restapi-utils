@@ -8,34 +8,32 @@ import java.lang.reflect.Method;
  */
 public class RequestLogProxy<T extends U, U> implements InvocationHandler {
     private final T target;
-    private Class<U> targetInterface;
+    private final String logName;
     private final IRequestLogger requestLogger;
-    private final String interfaceName;
-    private IRequestLogFilter requestLogFilter;
+    private final IRequestLogClassifier logClassifier;
 
-    public RequestLogProxy(IRequestLogger requestLogger, T target, Class<U> targetInterface, IRequestLogFilter requestLogFilter) {
+    public RequestLogProxy(IRequestLogger requestLogger, T target, String logName, IRequestLogClassifier logClassifier) {
         this.target = target;
-        this.targetInterface = targetInterface;
-        this.requestLogFilter = requestLogFilter;
-        this.interfaceName = targetInterface.getSimpleName();
+        this.logClassifier = logClassifier;
+        this.logName = logName;
         this.requestLogger = requestLogger;
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         String methodName = method.getName();
-        if (requestLogFilter.needLog(methodName)) {
+        if (logClassifier.needLog(methodName)) {
             long start = System.currentTimeMillis();
-            String group = requestLogFilter.getGroupByMethodName(methodName);
+            String group = logClassifier.getGroupByMethodName(methodName);
             try {
-                requestLogger.request(interfaceName, group);
+                requestLogger.request(logName, group);
                 Object ret = method.invoke(target, args);
                 long useTime = System.currentTimeMillis() - start;
-                requestLogger.respond(interfaceName, group, 200, useTime);
+                requestLogger.respond(logName, group, 200, useTime);
                 return ret;
             } catch (Throwable ex) {
                 long useTime = System.currentTimeMillis() - start;
-                requestLogger.respond(interfaceName, group, 500, useTime);
+                requestLogger.respond(logName, group, 500, useTime);
                 throw ex;
             }
         } else {
