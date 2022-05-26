@@ -18,14 +18,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class RequestLogger extends AbstractRequestLogger {
 
     private static final Logger logger = LogManager.getLogger(RequestLogger.class);
-    private final FuturedHttpClient futuredHttpClient;
+    private transient final FuturedHttpClient futuredHttpClient;
     private static final int timeout = 10000;
     private final AtomicLong logCount = new AtomicLong(0L);
-    private final AtomicLong logSucceedCount = new AtomicLong(0L);
-    private volatile String error;
 
-    private final String dbUrl;
-    private final String tableName;
+    private transient final String dbUrl;
+    private transient final String tableName;
 
     public RequestLogger(String dbUrl, FuturedHttpClient futuredHttpClient) {
         this.futuredHttpClient = futuredHttpClient;
@@ -39,18 +37,6 @@ public class RequestLogger extends AbstractRequestLogger {
         this.tableName = tableName;
     }
 
-    public double getLogSuccessRate() {
-        long c = logCount.get();
-        long s = logSucceedCount.get();
-        if (c > 0) {
-            return s*1.0 / c;
-        } else {
-            return 0.0;
-        }
-    }
-    public String getLastError() {
-        return error;
-    }
     public long getLogCount() {
         return logCount.get();
     }
@@ -91,19 +77,9 @@ public class RequestLogger extends AbstractRequestLogger {
         logCount.incrementAndGet();
         futuredHttpClient.ask(post, "request", timeout).onComplete(
             new OnComplete<HttpResult>() {
-                public void onComplete(Throwable ex, HttpResult ret) throws Throwable {
-                    if (ex == null) {
-                        if (ret.error == null) {
-                            int code = ret.response.getStatusLine().getStatusCode();
-                            if (code == 204 || code == 200) {
-                                logSucceedCount.incrementAndGet();
-                            } else {
-                                error = ret.value;
-                            }
-                        } else {
-                            error = ret.error.getMessage();
-                        }
-                    }
+                @Override
+                public void onComplete(Throwable ex, HttpResult ret) {
+                    //do nothing
                 }
             },futuredHttpClient.system.dispatcher());
     }

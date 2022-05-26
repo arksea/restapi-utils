@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
  * 处理Restful异常.
  */
 @ControllerAdvice
+@SuppressWarnings("PMD.MoreThanOneLogger")
 public class RestExceptionHandler {
     protected static final Logger LOGGER = LogManager.getLogger("net.arksea.restapi.logger.InternalError");
     protected static final Logger BADREQ_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.BadRequest");
@@ -38,72 +39,72 @@ public class RestExceptionHandler {
      * @param request
      * @return
      */
-    @ExceptionHandler(value = {RestException.class})
+    @ExceptionHandler(RestException.class)
     public final ResponseEntity<?> handleRestException(final RestException ex, final WebRequest request) {
         return handle(ex, ex.getCode(), ex.getStatus(), request, ex.getDetail());
     }
 
-    @ExceptionHandler(value = {BindException.class})
+    @ExceptionHandler(BindException.class)
     public final ResponseEntity<?> handleException(final BindException ex, final WebRequest request) {
         return handle(ex, HttpStatus.BAD_REQUEST, request);
     }
 
-    @ExceptionHandler(value = {Exception.class})
+    @ExceptionHandler(Exception.class)
     public final ResponseEntity<?> handleException(final Exception ex, final WebRequest request) {
         return handle(ex, HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
-    @ExceptionHandler(value = {ConversionNotSupportedException.class})
+    @ExceptionHandler(ConversionNotSupportedException.class)
     public final ResponseEntity<?> handleException(final ConversionNotSupportedException ex, final WebRequest request) {
         return handle(ex, HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
-    @ExceptionHandler(value = {HttpMediaTypeNotAcceptableException.class})
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
     public final ResponseEntity<?> handleException(final HttpMediaTypeNotAcceptableException ex, final WebRequest request) {
         return handle(ex, HttpStatus.NOT_ACCEPTABLE, request);
     }
 
-    @ExceptionHandler(value = {HttpMediaTypeNotSupportedException.class})
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public final ResponseEntity<?> handleException(final HttpMediaTypeNotSupportedException ex, final WebRequest request) {
         return handle(ex, HttpStatus.UNSUPPORTED_MEDIA_TYPE, request);
     }
 
-    @ExceptionHandler(value = {HttpMessageNotReadableException.class})
+    @ExceptionHandler(HttpMessageNotReadableException.class)
     public final ResponseEntity<?> handleException(final HttpMessageNotReadableException ex, final WebRequest request) {
         return handle(ex, HttpStatus.BAD_REQUEST, request);
     }
 
-    @ExceptionHandler(value = {HttpMessageNotWritableException.class})
+    @ExceptionHandler(HttpMessageNotWritableException.class)
     public final ResponseEntity<?> handleException(final HttpMessageNotWritableException ex, final WebRequest request) {
         return handle(ex, HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
-    @ExceptionHandler(value = {HttpRequestMethodNotSupportedException.class})
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public final ResponseEntity<?> handleException(final HttpRequestMethodNotSupportedException ex, final WebRequest request) {
         return handle(ex, HttpStatus.METHOD_NOT_ALLOWED, request);
     }
 
-    @ExceptionHandler(value = {MethodArgumentNotValidException.class})
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public final ResponseEntity<?> handleException(final MethodArgumentNotValidException ex, final WebRequest request) {
         return handle(ex, HttpStatus.BAD_REQUEST, request);
     }
 
-    @ExceptionHandler(value = {MissingPathVariableException.class})
+    @ExceptionHandler(MissingPathVariableException.class)
     public final ResponseEntity<?> handleException(final MissingPathVariableException ex, final WebRequest request) {
         return handle(ex, HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
-    @ExceptionHandler(value = {MissingServletRequestParameterException.class})
+    @ExceptionHandler(MissingServletRequestParameterException.class)
     public final ResponseEntity<?> handleException(final MissingServletRequestParameterException ex, final WebRequest request) {
         return handle(ex, HttpStatus.BAD_REQUEST, request);
     }
 
-    @ExceptionHandler(value = {MissingServletRequestPartException.class})
+    @ExceptionHandler(MissingServletRequestPartException.class)
     public final ResponseEntity<?> handleException(final MissingServletRequestPartException ex, final WebRequest request) {
         return handle(ex, HttpStatus.BAD_REQUEST, request);
     }
 
-    @ExceptionHandler(value = {TypeMismatchException.class})
+    @ExceptionHandler(TypeMismatchException.class)
     public final ResponseEntity<?> handleException(final TypeMismatchException ex, final WebRequest request) {
         return handle(ex, HttpStatus.BAD_REQUEST, request);
     }
@@ -141,7 +142,7 @@ public class RestExceptionHandler {
         }
         if (ex instanceof RestException) {
             RestException r = (RestException)ex;
-            if ("debug".equals(r.getLabel().toLowerCase())) {
+            if ("debug".equalsIgnoreCase(r.getLabel())) {
                 return true;
             }
         } else if (ex instanceof NestedServletException && ex.getCause() instanceof HttpMessageNotReadableException) {

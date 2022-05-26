@@ -3,10 +3,11 @@ package net.arksea.restapi;
 import org.springframework.http.HttpStatus;
 
 public class RestException extends RuntimeException {
+	private static final long serialVersionUID = 4046774595854568532L;
 	private HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR; //Http状态码
-	private volatile int code = 1; //附加(业务)错误码
-	private volatile String label = ""; //附加标记
-	private volatile String detail = "";//附加详细描述
+	private int code = 1; //附加(业务)错误码
+	private String label = ""; //附加标记
+	private String detail = "";//附加详细描述
 	public RestException(final String message) {
 		super(message);
 	}
@@ -58,6 +59,10 @@ public class RestException extends RuntimeException {
 
 	public HttpStatus getStatus() {
 		return status;
+	}
+
+	public void setStatus(HttpStatus status) {
+		this.status = status;
 	}
 
 	public String getLabel() {

@@ -69,8 +69,13 @@ public class RequestLogFilterBuilder {
         return this;
     }
 
-    public RequestLogFilter build() {
-        IRequestGroup requestGroup = new IRequestGroup() {
+    private IRequestGroup makeRequestGroup(final List<String> ignoreUris,
+            final List<String> ignoreUriPrefix,
+            final List<String> nameUriPrefix,
+            Pattern uriToNamePattern,
+            int namePatternMatchIndex,
+            String requestGroupHeaderName) {
+        return new IRequestGroup() {
             //除了指定的路径，默认提取Path前3段
             @Override
             public String getName(ServletRequest request) {
@@ -135,6 +140,9 @@ public class RequestLogFilterBuilder {
                 return reqid;
             }
         };
+    }
+    public RequestLogFilter build() {
+        IRequestGroup requestGroup = makeRequestGroup(ignoreUris,ignoreUriPrefix,nameUriPrefix, uriToNamePattern,namePatternMatchIndex,requestGroupHeaderName);
         return new RequestLogFilter(requestGroup, this.requestLogger);
     }
 

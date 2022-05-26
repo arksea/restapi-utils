@@ -1,6 +1,7 @@
 package net.arksea.restapi;
 
 import javax.servlet.ServletRequest;
+import java.util.UUID;
 
 /**
  *
@@ -12,7 +13,7 @@ public class BaseResult {
 
     public BaseResult(int code) {
         this.code = code;
-        this.reqid = null;
+        this.reqid = UUID.randomUUID().toString();
     }
 
     public BaseResult(int code, String reqid) {
@@ -24,5 +25,13 @@ public class BaseResult {
         String reqid = (String)httpRequest.getAttribute("restapi-requestid");
         this.code = code;
         this.reqid = reqid;
+    }
+
+    public int getCode() {
+        return code;
+    }
+
+    public String getReqid() {
+        return reqid;
     }
 }

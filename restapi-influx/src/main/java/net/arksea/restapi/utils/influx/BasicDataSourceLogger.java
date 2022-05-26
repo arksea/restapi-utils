@@ -26,8 +26,6 @@ public class BasicDataSourceLogger implements DataSource {
     private final FuturedHttpClient futuredHttpClient;
     private static final int timeout = 10000;
     private final AtomicLong logCount = new AtomicLong(0L);
-    private final AtomicLong logSucceedCount = new AtomicLong(0L);
-    private volatile String error;
 
     AtomicLong requestCount = new AtomicLong(0);
     AtomicLong respondTime = new AtomicLong(0);  //请求响应时间
@@ -45,18 +43,6 @@ public class BasicDataSourceLogger implements DataSource {
         this.dbUrl = dbUrl;
     }
 
-    public double getLogSuccessRate() {
-        long c = logCount.get();
-        long s = logSucceedCount.get();
-        if (c > 0) {
-            return s*1.0 / c;
-        } else {
-            return 0.0;
-        }
-    }
-    public String getLastError() {
-        return error;
-    }
     public long getLogCount() {
         return logCount.get();
     }
@@ -119,19 +105,9 @@ public class BasicDataSourceLogger implements DataSource {
         logCount.incrementAndGet();
         futuredHttpClient.ask(post, "request", timeout).onComplete(
             new OnComplete<HttpResult>() {
-                public void onComplete(Throwable ex, HttpResult ret) throws Throwable {
-                    if (ex == null) {
-                        if (ret.error == null) {
-                            int code = ret.response.getStatusLine().getStatusCode();
-                            if (code == 204 || code == 200) {
-                                logSucceedCount.incrementAndGet();
-                            } else {
-                                error = ret.value;
-                            }
-                        } else {
-                            error = ret.error.getMessage();
-                        }
-                    }
+                @Override
+                public void onComplete(Throwable ex, HttpResult ret) {
+                    //do nothing
                 }
             },futuredHttpClient.system.dispatcher());
     }

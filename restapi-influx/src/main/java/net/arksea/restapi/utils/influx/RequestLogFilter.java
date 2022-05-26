@@ -22,7 +22,6 @@ public class RequestLogFilter implements Filter {
 
     private final IRequestLogger requestLogger;
     private final IRequestGroup requestGroup;
-    private volatile boolean stopped = false;
     private final boolean delayCountRequest;
 
     public RequestLogFilter(IRequestGroup requestGroup, IRequestLogger requestLogger) {
@@ -32,18 +31,20 @@ public class RequestLogFilter implements Filter {
         this.requestGroup = requestGroup;
         this.requestLogger = requestLogger;
         this.delayCountRequest = delayCountRequest;
+        startWrite(requestLogger, this.LOGGER);
+    }
+
+    private void startWrite(IRequestLogger requestLogger, Logger logger) {
         final Thread writeThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    while(!stopped) {
+                    while(true) {
                         Thread.sleep(10000);
                         requestLogger.writeLogs();
                     }
                 } catch (InterruptedException ex) {
-                    if (!stopped) {
-                        LOGGER.error("Request log write thread interrputed", ex);
-                    }
+                    logger.error("Request log write thread interrputed", ex);
                 }
             }
         });
@@ -75,7 +76,6 @@ public class RequestLogFilter implements Filter {
             //2、当Controller为异步方法，在Controller超时没有设置结果时，ASYNC的doFilter会被调用，逻辑将走到此处
             chain.doFilter(req, resp);
             int status = resp.getStatus();
-            LOGGER.trace("------------------------{},{}",status,resp.getContentType());
             if (status >= 400 && status <=600 && req.getAttribute("-restapi-error-logged") == null) { //RestExceptionHandler未记录此异常，时写一条日志
                 //何时出现
                 //1、没有配置RestExceptionHandler时
@@ -110,10 +110,7 @@ public class RequestLogFilter implements Filter {
         try {
             name = requestGroup.getName(req);
             group = requestGroup.getGroup(req);
-        } catch (RestException ex) {
-            handleException(ex, name, group, startTime,req,resp);
-            return;
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             handleException(ex, name, group, startTime,req,resp);
             return;
         }
@@ -126,7 +123,6 @@ public class RequestLogFilter implements Filter {
             //StatusExportResposeWrapper wrapper = new StatusExportResposeWrapper(resp);
             //req.setAttribute("-restapi-response-wrapper", wrapper);
             chain.doFilter(req, resp);
-            LOGGER.trace("+++++++++++++++++++++++++++{},{}",resp.getStatus(),resp.getContentType());
             //当Controller同步返回结果时，ContentType不为null
             //当Controller为异步方法，此时返回respond还未设置结果
             //如果配置了ExceptionHandler，Controller抛出的异常会被Handler拦截，逻辑也会走到这里，
@@ -139,11 +135,7 @@ public class RequestLogFilter implements Filter {
                     requestLogger.request(name, group);
                 }
             }
-        } catch (RestException ex) {
-            //1、如果没有配置ExceptionHandler，Controller抛出的异常将在这里被catch; 2、本Filter之后的Filter中抛出的异常也将在这里catch
-            //外部错误日志用debug级别
-            handleException(ex, name, group, startTime,req,resp);
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             //1、如果没有配置ExceptionHandler，Controller抛出的异常将在这里被catch; 2、本Filter之后的Filter中抛出的异常也将在这里catch
             handleException(ex, name, group, startTime,req,resp);
         }
@@ -153,9 +145,9 @@ public class RequestLogFilter implements Filter {
                                  HttpServletRequest req,HttpServletResponse resp) throws IOException {
         HttpStatus retStatus = ex.getStatus();
         if (requestGroup.logDebugLevel(retStatus, ex)) {
-            BADREQ_LOGGER.debug(RestUtils.getRequestLogInfo(ex, retStatus, req, ""), ex);
+            BADREQ_LOGGER.debug(()->RestUtils.getRequestLogInfo(ex, retStatus, req, ""), ex);
         } else {
-            LOGGER.warn(RestUtils.getRequestLogInfo(ex, retStatus, req, ""), ex);
+            LOGGER.warn(()->RestUtils.getRequestLogInfo(ex, retStatus, req, ""), ex);
         }
         requestLogger.respond(name, group, ex.getStatus().value(), System.currentTimeMillis() - startTime);
         if (delayCountRequest) {
@@ -168,9 +160,9 @@ public class RequestLogFilter implements Filter {
     private void handleException(Throwable ex, String name, String group, long startTime,
                                  HttpServletRequest req,HttpServletResponse resp) throws IOException {
         if (requestGroup.logDebugLevel(HttpStatus.INTERNAL_SERVER_ERROR, ex)) {
-            BADREQ_LOGGER.debug(RestUtils.getRequestLogInfo(ex, HttpStatus.INTERNAL_SERVER_ERROR, req, ""), ex);
+            BADREQ_LOGGER.debug(()->RestUtils.getRequestLogInfo(ex, HttpStatus.INTERNAL_SERVER_ERROR, req, ""), ex);
         } else {
-            LOGGER.warn(RestUtils.getRequestLogInfo(ex, HttpStatus.INTERNAL_SERVER_ERROR, req, ""), ex);
+            LOGGER.warn(()->RestUtils.getRequestLogInfo(ex, HttpStatus.INTERNAL_SERVER_ERROR, req, ""), ex);
         }
         requestLogger.respond(name, group, HttpStatus.INTERNAL_SERVER_ERROR.value(), System.currentTimeMillis() - startTime);
         if (delayCountRequest) {

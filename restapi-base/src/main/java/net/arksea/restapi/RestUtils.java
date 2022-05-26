@@ -15,6 +15,7 @@ import java.util.Iterator;
  *
  * Created by xiaohaixing_dian91 on 2016/11/25.
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class RestUtils {
     public static ObjectMapper objectMapper = new ObjectMapper();
 

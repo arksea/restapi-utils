@@ -8,11 +8,10 @@ import java.lang.reflect.Proxy;
  * Create by xiaohaixing on 2020/8/11
  */
 public class RequestLogProxyCreator implements IRequestLogProxyCreator {
-    private final IRequestLogger requestLogger;
-    private final IRequestLogClassifier logClassifier;
+    private transient final IRequestLogger requestLogger;
+    private transient final IRequestLogClassifier logClassifier;
     public RequestLogProxyCreator(IRequestLogger requestLogger) {
-        this.requestLogger = requestLogger;
-        this.logClassifier = null;
+        this(requestLogger, null);
     }
     public RequestLogProxyCreator(IRequestLogger requestLogger, IRequestLogClassifier logClassifier) {
         this.requestLogger = requestLogger;
