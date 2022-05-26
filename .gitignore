@@ -7,3 +7,4 @@
 /restapi-influx-demo/build
 /restapi-influx-demo/tomcat/webapps/demo
 /build
+/demo-dao-request-log/build
