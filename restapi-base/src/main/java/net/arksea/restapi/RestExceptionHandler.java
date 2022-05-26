@@ -21,8 +21,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
-import org.springframework.web.servlet.NoHandlerFoundException;
-import org.springframework.web.servlet.mvc.multiaction.NoSuchRequestHandlingMethodException;
 import org.springframework.web.util.NestedServletException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -42,7 +40,7 @@ public class RestExceptionHandler {
      */
     @ExceptionHandler(value = {RestException.class})
     public final ResponseEntity<?> handleRestException(final RestException ex, final WebRequest request) {
-        return handle(ex, ex.getStatus(), request, ex.getDetail());
+        return handle(ex, ex.getCode(), ex.getStatus(), request, ex.getDetail());
     }
 
     @ExceptionHandler(value = {BindException.class})
@@ -105,26 +103,16 @@ public class RestExceptionHandler {
         return handle(ex, HttpStatus.BAD_REQUEST, request);
     }
 
-    @ExceptionHandler(value = {NoHandlerFoundException.class})
-    public final ResponseEntity<?> handleException(final NoHandlerFoundException ex, final WebRequest request) {
-        return handle(ex, HttpStatus.NOT_FOUND, request);
-    }
-
-    @ExceptionHandler(value = {NoSuchRequestHandlingMethodException.class})
-    public final ResponseEntity<?> handleException(final NoSuchRequestHandlingMethodException ex, final WebRequest request) {
-        return handle(ex, HttpStatus.NOT_FOUND, request);
-    }
-
     @ExceptionHandler(value = {TypeMismatchException.class})
     public final ResponseEntity<?> handleException(final TypeMismatchException ex, final WebRequest request) {
         return handle(ex, HttpStatus.BAD_REQUEST, request);
     }
 
     public final ResponseEntity<?> handle(final Exception ex, final HttpStatus status, final WebRequest request) {
-        return handle(ex,status,request,"");
+        return handle(ex,1,status,request,"");
     }
 
-    public ResponseEntity<?> handle(final Exception ex, final HttpStatus status, final WebRequest request, final String extDetail) {
+    public ResponseEntity<?> handle(final Exception ex, int code, final HttpStatus status, final WebRequest request, final String extDetail) {
 
         String alarmMsg = RestUtils.getRequestLogInfo(ex,status,request,extDetail);
         //外部错误日志用debug级别
@@ -138,7 +126,7 @@ public class RestExceptionHandler {
         final String reqid = (String) request.getAttribute("restapi-requestid", WebRequest.SCOPE_REQUEST);
         final HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("application/json; charset=UTF-8"));
-        String body = RestUtils.createError(retStatus.value(), ex.getMessage(), reqid);
+        String body = reqid==null ? RestUtils.createError(code, ex.getMessage()) : RestUtils.createError(code, ex.getMessage(), reqid);
         return new ResponseEntity<Object>(body, headers, retStatus);
     }
 

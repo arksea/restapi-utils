@@ -25,6 +25,10 @@ public final class RestUtils {
         return "{\"code\":"+code+",\"reqid\":\""+reqid+"\"}";
     }
 
+    public static String createResult(int code) {
+        return "{\"code\":"+code+"}";
+    }
+
     public static <T> String createResult(int code, T value, String reqid) {
         try {
             final RestResult<T> result = new RestResult<>(code, value, reqid);
@@ -38,10 +42,23 @@ public final class RestUtils {
         return "{\"code\":"+code+",\"result\":"+json+",\"reqid\":\""+reqid+"\"}";
     }
 
+    public static <T> String createJsonResult(int code, String json) {
+        return "{\"code\":"+code+",\"result\":"+json+"}";
+    }
+
     public static String createError(int code, String error, String reqid) {
         try {
             String errorJson = objectMapper.writeValueAsString(error);
             return "{\"code\":"+code+",\"error\":"+errorJson+",\"reqid\":\""+reqid+"\"}";
+        } catch (JsonProcessingException ex) {
+            throw new RestException("Object result to json failed", ex);
+        }
+    }
+
+    public static String createError(int code, String error) {
+        try {
+            String errorJson = objectMapper.writeValueAsString(error);
+            return "{\"code\":"+code+",\"error\":"+errorJson+"}";
         } catch (JsonProcessingException ex) {
             throw new RestException("Object result to json failed", ex);
         }

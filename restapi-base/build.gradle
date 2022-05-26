@@ -10,7 +10,7 @@ description = """REST-API基础类"""
 
 dependencies {
     compile 'org.apache.commons:commons-lang3:3.3.2'
-    compile 'org.springframework:spring-webmvc:4.2.2.RELEASE'
+    compile 'org.springframework:spring-web:4.3.27.RELEASE'
     compile 'javax.servlet:javax.servlet-api:3.1.0'
     compile 'com.fasterxml.jackson.core:jackson-databind:2.6.0'
 }
