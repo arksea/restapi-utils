@@ -9,8 +9,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 /**
  *
  * Created by xiaohaixing on 2017/5/20.
@@ -20,10 +18,11 @@ public class RequestLogger extends AbstractRequestLogger {
     private static final Logger logger = LogManager.getLogger(RequestLogger.class);
     private transient final FuturedHttpClient futuredHttpClient;
     private static final int timeout = 10000;
-    private final AtomicLong logCount = new AtomicLong(0L);
 
     private transient final String dbUrl;
     private transient final String tableName;
+    private long lastLogErrorTime = 0;
+    private long lastLogSucceedTime = 0;
 
     public RequestLogger(String dbUrl, FuturedHttpClient futuredHttpClient) {
         this.futuredHttpClient = futuredHttpClient;
@@ -35,10 +34,6 @@ public class RequestLogger extends AbstractRequestLogger {
         this.futuredHttpClient = futuredHttpClient;
         this.dbUrl = dbUrl;
         this.tableName = tableName;
-    }
-
-    public long getLogCount() {
-        return logCount.get();
     }
 
     @Override
@@ -74,17 +69,53 @@ public class RequestLogger extends AbstractRequestLogger {
         }
         logger.debug(body);
         post.setEntity(new StringEntity(body, "UTF-8"));
-        logCount.incrementAndGet();
         futuredHttpClient.ask(post, "request", timeout).onComplete(
             new OnComplete<HttpResult>() {
                 @Override
                 public void onComplete(Throwable ex, HttpResult ret) {
-                    //do nothing
+                    if (ex == null) {
+                        if (ret.error == null) {
+                            int code = ret.response.getStatusLine().getStatusCode();
+                            if (code == 204 || code == 200) {
+                                if (needLogSucceed()) {
+                                    logger.info("Write InfluxDB {} succeed", tableName);
+                                }
+                            } else if(needLogError()) {
+                                logger.warn("Write InfluxDB {} failed, result={}", tableName, ret.value);
+                            }
+                        } else if (needLogError()) {
+                            logger.warn("Write InfluxDB {} failed", tableName, ret.error);
+                        }
+                    } else if (needLogError()) {
+                        logger.warn("Write InfluxDB {} failed", tableName, ex);
+                    }
                 }
             },futuredHttpClient.system.dispatcher());
     }
 
     private String format(String str) {
         return "".equals(str) ? "blank" : str;
+    }
+
+    private boolean needLogError() {
+        long now = System.currentTimeMillis();
+        if (now - lastLogErrorTime > 600_000) {
+            lastLogErrorTime = now;
+            lastLogSucceedTime = 0;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private boolean needLogSucceed() {
+        long now = System.currentTimeMillis();
+        if (lastLogSucceedTime == 0) {
+            lastLogSucceedTime = now;
+            lastLogErrorTime = 0;
+            return true;
+        } else {
+            return false;
+        }
     }
 }

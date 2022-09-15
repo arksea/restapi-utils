@@ -191,5 +191,6 @@ public class RequestLogFilter implements Filter {
     @Override
     public void init(final FilterConfig config) throws ServletException {
         //do nothing
+        LOGGER.info("RequestLogFilter init()");
     }
 }
