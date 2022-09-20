@@ -19,4 +19,7 @@ public interface IRequestGroup {
     default boolean logDebugLevel(HttpStatus status, Throwable ex) {
         return RestExceptionHandler.logDebugLevel(status, ex);
     }
+    default boolean needTrace(ServletRequest request) {
+        return false;
+    }
 }

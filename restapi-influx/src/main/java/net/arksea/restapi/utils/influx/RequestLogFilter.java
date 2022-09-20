@@ -17,6 +17,7 @@ import java.io.PrintWriter;
  * Created by xiaohaixing on 2018/4/2.
  */
 public class RequestLogFilter implements Filter {
+    private static final Logger TRACE_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.traceLogger");
     private static final Logger LOGGER = LogManager.getLogger("net.arksea.restapi.logger.InternalError");
     private static final Logger BADREQ_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.BadRequest");
 
@@ -63,18 +64,35 @@ public class RequestLogFilter implements Filter {
     //一个在收到request时调用，另一个在获得respond结果时调用
     @Override
     public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain) throws IOException, ServletException {
-        if (requestGroup.ignore(request)) {
-            chain.doFilter(request, response);
-            return;
-        }
         final HttpServletRequest req = (HttpServletRequest) request;
         final HttpServletResponse resp = (HttpServletResponse) response;
-        if (req.getAttribute("-restapi-start-time") == null) { //防止配置有误，多次调用此filter
+        if (requestGroup.ignore(request)) {
+            chain.doFilter(req, resp);
+            return;
+        }
+        if (req.getAttribute("-restapi-start-time") == null) { //同步调用， 防止配置有误，多次调用此filter
             getGroupNameAndDoFilter(req, resp, chain);
-        } else {
+        } else { //异步调用
             //1、当Controller为异步方法，在设置respond结果后，无论是正确的结果还是错误的结果，ASYNC的doFilter将被调用，逻辑将走到此处
             //2、当Controller为异步方法，在Controller超时没有设置结果时，ASYNC的doFilter会被调用，逻辑将走到此处
-            chain.doFilter(req, resp);
+            if (requestGroup.needTrace(req) && TRACE_LOGGER.isInfoEnabled()) {
+                RespondWrapper respWrapper = (RespondWrapper)request.getAttribute("__respWrapper");
+                chain.doFilter(req, respWrapper);
+                //如果ContentType不为null，说明Controller为同步模式，此时已返回结果，
+                //如果ContentType为null，说明Controller为异步模式，此时Controller还未实际执行
+                String respBody = respWrapper.writeBody();
+                final StringBuilder sb = new StringBuilder();
+                RestUtils.fillRequestLogInfo(sb, req);
+                sb.append("--- request body:\n");
+                RequestWrapper reqWrapper = (RequestWrapper)request.getAttribute("__reqWrapper");
+                sb.append(reqWrapper.getBody());
+                sb.append("\n--- respond body:\n");
+                sb.append(respBody);
+                TRACE_LOGGER.info(sb.toString());
+            } else {
+                chain.doFilter(req, resp);
+            }
+
             int status = resp.getStatus();
             if (status >= 400 && status <=600 && req.getAttribute("-restapi-error-logged") == null) { //RestExceptionHandler未记录此异常，时写一条日志
                 //何时出现
@@ -120,9 +138,28 @@ public class RequestLogFilter implements Filter {
             requestLogger.request(name, group);
         }
         try {
-            //StatusExportResposeWrapper wrapper = new StatusExportResposeWrapper(resp);
-            //req.setAttribute("-restapi-response-wrapper", wrapper);
-            chain.doFilter(req, resp);
+            if (requestGroup.needTrace(req) && TRACE_LOGGER.isInfoEnabled()) {
+                RequestWrapper reqWrapper = new RequestWrapper(req);
+                RespondWrapper respWrapper = new RespondWrapper(resp);
+                req.setAttribute("__respWrapper", respWrapper); //异步调用时需要暂时先存下来
+                chain.doFilter(reqWrapper, respWrapper);
+                //如果ContentType不为null，说明Controller为同步模式，此时已返回结果，
+                //如果ContentType为null，说明Controller为异步模式，此时Controller还未实际执行
+                if (respWrapper.getContentType() != null) {
+                    if (TRACE_LOGGER.isInfoEnabled()) {
+                        String respBody = respWrapper.writeBody();
+                        final StringBuilder sb = new StringBuilder();
+                        RestUtils.fillRequestLogInfo(sb, req);
+                        sb.append("--- request body:\n");
+                        sb.append(reqWrapper.getBody());
+                        sb.append("\n--- respond body:\n");
+                        sb.append(respBody);
+                        TRACE_LOGGER.info(sb.toString());
+                    }
+                }
+            } else {
+                chain.doFilter(req, resp);
+            }
             //当Controller同步返回结果时，ContentType不为null
             //当Controller为异步方法，此时返回respond还未设置结果
             //如果配置了ExceptionHandler，Controller抛出的异常会被Handler拦截，逻辑也会走到这里，

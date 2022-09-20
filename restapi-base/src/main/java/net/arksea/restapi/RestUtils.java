@@ -98,7 +98,7 @@ public final class RestUtils {
         } else {
             sb.append(ex.getMessage());
         }
-        sb.append("\nstatus: ").append(status.toString());
+        sb.append("\n---status: ").append(status.toString());
         if (!StringUtils.isEmpty(extDetail)) {
             sb.append("\n").append(extDetail);
         }
@@ -115,7 +115,7 @@ public final class RestUtils {
         } else {
             sb.append(ex.getMessage());
         }
-        sb.append("\nstatus: ").append(status.toString());
+        sb.append("\n--- status: ").append(status.toString());
         if (!StringUtils.isEmpty(extDetail)) {
             sb.append("\n").append(extDetail);
         }
@@ -125,15 +125,15 @@ public final class RestUtils {
     }
 
     public static void fillRequestLogInfo(final StringBuilder sb, final WebRequest req) {
-        sb.append("request: ").append(req.getDescription(true));
-        sb.append("\nparams: \n");
+        sb.append("\n--- request uri: ").append(req.getDescription(true));
+        sb.append("\n--- request params: \n");
         Iterator<String> it = req.getParameterNames();
         while (it.hasNext()) {
             String name = it.next();
             String value = req.getParameter(name);
             sb.append("  ").append(name).append(": ").append(value).append("\n");
         }
-        sb.append("headers: \n");
+        sb.append("--- request headers: \n");
         it = req.getHeaderNames();
         while(it.hasNext()) {
             String name = it.next();
@@ -142,16 +142,16 @@ public final class RestUtils {
         }
     }
     public static void fillRequestLogInfo(final StringBuilder sb, final HttpServletRequest req) {
-        sb.append("request: uri=").append(req.getRequestURI())
-          .append(";client=").append(req.getRemoteAddr());
-        sb.append("\nparams: \n");
+        sb.append("\n--- request uri: ").append(req.getRequestURI())
+          .append("\n--- request client: ").append(req.getRemoteAddr());
+        sb.append("\n--- request params: \n");
         Enumeration<String> it = req.getParameterNames();
         while (it.hasMoreElements()) {
             String name = it.nextElement();
             String value = req.getParameter(name);
             sb.append("  ").append(name).append(": ").append(value).append("\n");
         }
-        sb.append("headers: \n");
+        sb.append("--- request headers: \n");
         it = req.getHeaderNames();
         while(it.hasMoreElements()) {
             String name = it.nextElement();
