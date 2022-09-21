@@ -8,12 +8,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Create by xiaohaixing on 2020/6/10
  */
 public class RespondWrapper extends HttpServletResponseWrapper {
+
     private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     private ServletOutputStream out;
     private PrintWriter writer;
@@ -70,9 +70,9 @@ public class RespondWrapper extends HttpServletResponseWrapper {
     public String writeBody() throws IOException {
         byte[] body = getResponseData();
         try(PrintWriter w = super.getWriter()) {
-            w.print(new String(body, StandardCharsets.UTF_8));
+            w.print(new String(body, this.getCharacterEncoding()));
             w.flush();
         }
-        return new String(body, StandardCharsets.UTF_8);
+        return new String(body, this.getCharacterEncoding());
     }
 }
