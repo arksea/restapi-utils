@@ -22,17 +22,22 @@ public class RequestLogFilter implements Filter {
     private static final Logger BADREQ_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.BadRequest");
 
     private final IRequestLogger requestLogger;
-    private final IRequestGroup requestGroup;
+    private final IRequestLogFilterConfig config;
     private final boolean delayCountRequest;
 
-    public RequestLogFilter(IRequestGroup requestGroup, IRequestLogger requestLogger) {
-        this(requestGroup, requestLogger, true);
+    public RequestLogFilter(IRequestLogFilterConfig config) {
+        this(config, null);
     }
-    public RequestLogFilter(IRequestGroup requestGroup, IRequestLogger requestLogger, boolean delayCountRequest) {
-        this.requestGroup = requestGroup;
+    public RequestLogFilter(IRequestLogFilterConfig config, IRequestLogger requestLogger) {
+        this(config, requestLogger, true);
+    }
+    public RequestLogFilter(IRequestLogFilterConfig config, IRequestLogger requestLogger, boolean delayCountRequest) {
+        this.config = config;
         this.requestLogger = requestLogger;
         this.delayCountRequest = delayCountRequest;
-        startWrite(requestLogger, this.LOGGER);
+        if (requestLogger != null) {
+            startWrite(requestLogger, this.LOGGER);
+        }
     }
 
     private void startWrite(IRequestLogger requestLogger, Logger logger) {
@@ -66,7 +71,7 @@ public class RequestLogFilter implements Filter {
     public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain) throws IOException, ServletException {
         final HttpServletRequest req = (HttpServletRequest) request;
         final HttpServletResponse resp = (HttpServletResponse) response;
-        if (requestGroup.ignore(request)) {
+        if (config.ignore(request)) {
             chain.doFilter(req, resp);
             return;
         }
@@ -75,7 +80,7 @@ public class RequestLogFilter implements Filter {
         } else { //异步调用
             //1、当Controller为异步方法，在设置respond结果后，无论是正确的结果还是错误的结果，ASYNC的doFilter将被调用，逻辑将走到此处
             //2、当Controller为异步方法，在Controller超时没有设置结果时，ASYNC的doFilter会被调用，逻辑将走到此处
-            if (requestGroup.needTrace(req) && TRACE_LOGGER.isInfoEnabled()) {
+            if (config.needTrace(req) && TRACE_LOGGER.isInfoEnabled()) {
                 RespondWrapper respWrapper = (RespondWrapper)request.getAttribute("__respWrapper");
                 chain.doFilter(req, respWrapper);
                 //如果ContentType不为null，说明Controller为同步模式，此时已返回结果，
@@ -86,36 +91,38 @@ public class RequestLogFilter implements Filter {
                 sb.append("--- request body:\n");
                 RequestWrapper reqWrapper = (RequestWrapper)request.getAttribute("__reqWrapper");
                 sb.append(reqWrapper.getBody());
-                sb.append("\n--- respond body:\n");
+                RestUtils.fillResponseLogInfo(sb, resp);
+                sb.append("\n--- response body:\n");
                 sb.append(respBody);
                 TRACE_LOGGER.info(sb.toString());
             } else {
                 chain.doFilter(req, resp);
             }
-
-            int status = resp.getStatus();
-            if (status >= 400 && status <=600 && req.getAttribute("-restapi-error-logged") == null) { //RestExceptionHandler未记录此异常，时写一条日志
-                //何时出现
-                //1、没有配置RestExceptionHandler时
-                //2、使用异步模式，DeferredResult.setResult一个status不为200的结果时，
-                //   而非DeferredResult.setErrorResult一个异常(这种情况RestExceptionHandler将会拦截到这个异常并处理)
-                HttpStatus retStatus = HttpStatus.valueOf(status);
-                RestException ex = new RestException("error result");
-                String alarmMsg = RestUtils.getRequestLogInfo(ex, retStatus, req, "");
-                //外部错误日志用debug级别
-                if (requestGroup.logDebugLevel(retStatus, ex)) {
-                    BADREQ_LOGGER.debug(alarmMsg, ex);
-                } else {
-                    LOGGER.warn(alarmMsg, ex);
+            if (requestLogger != null) {
+                int status = resp.getStatus();
+                if (status >= 400 && status <= 600 && req.getAttribute("-restapi-error-logged") == null) { //RestExceptionHandler未记录此异常，时写一条日志
+                    //何时出现
+                    //1、没有配置RestExceptionHandler时
+                    //2、使用异步模式，DeferredResult.setResult一个status不为200的结果时，
+                    //   而非DeferredResult.setErrorResult一个异常(这种情况RestExceptionHandler将会拦截到这个异常并处理)
+                    HttpStatus retStatus = HttpStatus.valueOf(status);
+                    RestException ex = new RestException("error result");
+                    String alarmMsg = RestUtils.getRequestLogInfo(ex, retStatus, req, "");
+                    //外部错误日志用debug级别
+                    if (config.logDebugLevel(retStatus, ex)) {
+                        BADREQ_LOGGER.debug(alarmMsg, ex);
+                    } else {
+                        LOGGER.warn(alarmMsg, ex);
+                    }
                 }
-            }
-            Long requestStartTime = (Long) req.getAttribute("-restapi-start-time");
-            String name = (String) req.getAttribute("-restapi-name");
-            String group = (String) req.getAttribute("-restapi-group");
-            long respondTime = System.currentTimeMillis() - requestStartTime;
-            requestLogger.respond(name, group, status, respondTime);
-            if (delayCountRequest) {
-                requestLogger.request(name, group);
+                Long requestStartTime = (Long) req.getAttribute("-restapi-start-time");
+                String name = (String) req.getAttribute("-restapi-name");
+                String group = (String) req.getAttribute("-restapi-group");
+                long respondTime = System.currentTimeMillis() - requestStartTime;
+                requestLogger.respond(name, group, status, respondTime);
+                if (delayCountRequest) {
+                    requestLogger.request(name, group);
+                }
             }
         }
     }
@@ -126,8 +133,8 @@ public class RequestLogFilter implements Filter {
         String name = "unknown";
         String group = "unknown";
         try {
-            name = requestGroup.getName(req);
-            group = requestGroup.getGroup(req);
+            name = config.getName(req);
+            group = config.getGroup(req);
         } catch (Exception ex) {
             handleException(ex, name, group, startTime,req,resp);
             return;
@@ -135,10 +142,12 @@ public class RequestLogFilter implements Filter {
         req.setAttribute("-restapi-name", name);
         req.setAttribute("-restapi-group", group);
         if (!delayCountRequest) {
-            requestLogger.request(name, group);
+            if (requestLogger != null) {
+                requestLogger.request(name, group);
+            }
         }
         try {
-            if (requestGroup.needTrace(req) && TRACE_LOGGER.isInfoEnabled()) {
+            if (config.needTrace(req) && TRACE_LOGGER.isInfoEnabled()) {
                 RequestWrapper reqWrapper = new RequestWrapper(req);
                 RespondWrapper respWrapper = new RespondWrapper(resp);
                 req.setAttribute("__respWrapper", respWrapper); //异步调用时需要暂时先存下来
@@ -152,7 +161,8 @@ public class RequestLogFilter implements Filter {
                         RestUtils.fillRequestLogInfo(sb, req);
                         sb.append("--- request body:\n");
                         sb.append(reqWrapper.getBody());
-                        sb.append("\n--- respond body:\n");
+                        RestUtils.fillResponseLogInfo(sb, resp);
+                        sb.append("\n--- response body:\n");
                         sb.append(respBody);
                         TRACE_LOGGER.info(sb.toString());
                     }
@@ -164,7 +174,7 @@ public class RequestLogFilter implements Filter {
             //当Controller为异步方法，此时返回respond还未设置结果
             //如果配置了ExceptionHandler，Controller抛出的异常会被Handler拦截，逻辑也会走到这里，
             //    Handler中 return new ResponseEntity<Object>(body, headers, status), status可以在此处取到
-            if (resp.getContentType() != null) {
+            if (requestLogger != null && resp.getContentType() != null) {
                 int status = resp.getStatus();
                 long respondTime = System.currentTimeMillis() - startTime;
                 requestLogger.respond(name, group, status, respondTime);
@@ -181,41 +191,42 @@ public class RequestLogFilter implements Filter {
     private void handleException(RestException ex, String name, String group, long startTime,
                                  HttpServletRequest req,HttpServletResponse resp) throws IOException {
         HttpStatus retStatus = ex.getStatus();
-        if (requestGroup.logDebugLevel(retStatus, ex)) {
+        if (config.logDebugLevel(retStatus, ex)) {
             BADREQ_LOGGER.debug(()->RestUtils.getRequestLogInfo(ex, retStatus, req, ""), ex);
         } else {
             LOGGER.warn(()->RestUtils.getRequestLogInfo(ex, retStatus, req, ""), ex);
         }
-        requestLogger.respond(name, group, ex.getStatus().value(), System.currentTimeMillis() - startTime);
-        if (delayCountRequest) {
-            requestLogger.request(name, group);
+        if (requestLogger != null) {
+            requestLogger.respond(name, group, ex.getStatus().value(), System.currentTimeMillis() - startTime);
+            if (delayCountRequest) {
+                requestLogger.request(name, group);
+            }
         }
-        String error = ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage();
-        resultError(ex.getStatus(),1, error, req, resp);
+        resultError(ex.getStatus(), ex, req, resp);
     }
 
     private void handleException(Throwable ex, String name, String group, long startTime,
                                  HttpServletRequest req,HttpServletResponse resp) throws IOException {
-        if (requestGroup.logDebugLevel(HttpStatus.INTERNAL_SERVER_ERROR, ex)) {
+        if (config.logDebugLevel(HttpStatus.INTERNAL_SERVER_ERROR, ex)) {
             BADREQ_LOGGER.debug(()->RestUtils.getRequestLogInfo(ex, HttpStatus.INTERNAL_SERVER_ERROR, req, ""), ex);
         } else {
             LOGGER.warn(()->RestUtils.getRequestLogInfo(ex, HttpStatus.INTERNAL_SERVER_ERROR, req, ""), ex);
         }
-        requestLogger.respond(name, group, HttpStatus.INTERNAL_SERVER_ERROR.value(), System.currentTimeMillis() - startTime);
-        if (delayCountRequest) {
-            requestLogger.request(name, group);
+        if (requestLogger != null) {
+            requestLogger.respond(name, group, HttpStatus.INTERNAL_SERVER_ERROR.value(), System.currentTimeMillis() - startTime);
+            if (delayCountRequest) {
+                requestLogger.request(name, group);
+            }
         }
-        String error = ex.getCause() == null ? ex.getMessage() : ex.getCause().getMessage();
-        resultError(HttpStatus.INTERNAL_SERVER_ERROR, 1, error, req, resp);
+        resultError(HttpStatus.INTERNAL_SERVER_ERROR, ex, req, resp);
     }
 
-    private void resultError(HttpStatus status, int errCode,String error, HttpServletRequest request, HttpServletResponse httpResponse) throws IOException {
+    private void resultError(HttpStatus status, Throwable ex, HttpServletRequest request, HttpServletResponse httpResponse) throws IOException {
         PrintWriter out = null;
         try {
             httpResponse.setStatus(status.value());
             out = httpResponse.getWriter();
-            String reqid = requestGroup.getRequestId(request);
-            String data = RestUtils.createError(errCode, error, reqid);
+            String data = config.makeExceptionResult(request, status, ex);
             out.write(data);
             out.flush();
         } finally {

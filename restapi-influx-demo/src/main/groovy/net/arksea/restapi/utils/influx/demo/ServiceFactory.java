@@ -3,7 +3,7 @@ package net.arksea.restapi.utils.influx.demo;
 import akka.actor.ActorSystem;
 import net.arksea.restapi.utils.influx.IRequestLogger;
 import net.arksea.restapi.utils.influx.RequestLogFilter;
-import net.arksea.restapi.utils.influx.RequestLogFilterBuilder;
+import net.arksea.restapi.utils.influx.DefaultRequestLogFilterBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.annotation.Bean;
@@ -37,11 +37,10 @@ public class ServiceFactory {
                 logger.info("RequestLogger.writeLogs");
             }
         };
-        return new RequestLogFilterBuilder()
-                .addIgnoreUri("/heartbeat")
-                .setRequestGroupHeaderName("productId")
+        return new DefaultRequestLogFilterBuilder()
+                .addIgnoreUriPrefix("/heartbeat")
+                .setRequestGroupHeaderName("x-product-id")
                 .setRequestLogger(reqLogger)
                 .build();
     }
-
 }

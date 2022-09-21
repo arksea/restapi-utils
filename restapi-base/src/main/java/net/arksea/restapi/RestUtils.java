@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.context.request.WebRequest;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.Enumeration;
 import java.util.Iterator;
 
@@ -156,6 +157,13 @@ public final class RestUtils {
         while(it.hasMoreElements()) {
             String name = it.nextElement();
             String value = req.getHeader(name);
+            sb.append("  ").append(name).append(": ").append(value).append("\n");
+        }
+    }
+    public static void fillResponseLogInfo(final StringBuilder sb, final HttpServletResponse resp) {
+        sb.append("\n--- response headers: \n");
+        for (String name : resp.getHeaderNames()) {
+            String value = resp.getHeader(name);
             sb.append("  ").append(name).append(": ").append(value).append("\n");
         }
     }
