@@ -80,21 +80,26 @@ public class RequestLogFilter implements Filter {
         } else { //异步调用
             //1、当Controller为异步方法，在设置respond结果后，无论是正确的结果还是错误的结果，ASYNC的doFilter将被调用，逻辑将走到此处
             //2、当Controller为异步方法，在Controller超时没有设置结果时，ASYNC的doFilter会被调用，逻辑将走到此处
-            if (config.needTrace(req) && TRACE_LOGGER.isInfoEnabled()) {
+            Boolean needTrace = (Boolean)req.getAttribute("-restapi-need-trace");
+            if (needTrace!=null && needTrace && TRACE_LOGGER.isInfoEnabled()) {
                 RespondWrapper respWrapper = (RespondWrapper)request.getAttribute("__respWrapper");
                 chain.doFilter(req, respWrapper);
-                //如果ContentType不为null，说明Controller为同步模式，此时已返回结果，
-                //如果ContentType为null，说明Controller为异步模式，此时Controller还未实际执行
-                String respBody = respWrapper.writeBody();
-                final StringBuilder sb = new StringBuilder();
-                RestUtils.fillRequestLogInfo(sb, req);
-                sb.append("--- request body:\n");
-                RequestWrapper reqWrapper = (RequestWrapper)request.getAttribute("__reqWrapper");
-                sb.append(reqWrapper.getBody());
-                RestUtils.fillResponseLogInfo(sb, resp);
-                sb.append("\n--- response body:\n");
-                sb.append(respBody);
-                TRACE_LOGGER.info(sb.toString());
+                try {
+                    //如果ContentType不为null，说明Controller为同步模式，此时已返回结果，
+                    //如果ContentType为null，说明Controller为异步模式，此时Controller还未实际执行
+                    String respBody = respWrapper.writeBody();
+                    final StringBuilder sb = new StringBuilder();
+                    RestUtils.fillRequestLogInfo(sb, req);
+                    sb.append("--- request body:\n");
+                    RequestWrapper reqWrapper = (RequestWrapper) request.getAttribute("__reqWrapper");
+                    sb.append(reqWrapper.getBody());
+                    RestUtils.fillResponseLogInfo(sb, resp);
+                    sb.append("\n--- response body:\n");
+                    sb.append(respBody);
+                    TRACE_LOGGER.info(sb.toString());
+                } catch (Exception ex) {
+                    TRACE_LOGGER.error("log trace info failed",ex);
+                }
             } else {
                 chain.doFilter(req, resp);
             }
@@ -130,6 +135,8 @@ public class RequestLogFilter implements Filter {
     private void getGroupNameAndDoFilter(final HttpServletRequest req,HttpServletResponse resp,final FilterChain chain) throws IOException {
         long startTime = System.currentTimeMillis();
         req.setAttribute("-restapi-start-time", startTime);
+        boolean needTrace = config.needTrace(req);
+        req.setAttribute("-restapi-need-trace", needTrace); //用于保证每次请求只调用一次config.needTrace(req)
         String name = "unknown";
         String group = "unknown";
         try {
@@ -147,24 +154,29 @@ public class RequestLogFilter implements Filter {
             }
         }
         try {
-            if (config.needTrace(req) && TRACE_LOGGER.isInfoEnabled()) {
+            if (needTrace && TRACE_LOGGER.isInfoEnabled()) {
                 RequestWrapper reqWrapper = new RequestWrapper(req);
                 RespondWrapper respWrapper = new RespondWrapper(resp);
+                req.setAttribute("__reqWrapper", reqWrapper); //异步调用时需要暂时先存下来
                 req.setAttribute("__respWrapper", respWrapper); //异步调用时需要暂时先存下来
                 chain.doFilter(reqWrapper, respWrapper);
                 //如果ContentType不为null，说明Controller为同步模式，此时已返回结果，
                 //如果ContentType为null，说明Controller为异步模式，此时Controller还未实际执行
                 if (respWrapper.getContentType() != null) {
                     if (TRACE_LOGGER.isInfoEnabled()) {
-                        String respBody = respWrapper.writeBody();
-                        final StringBuilder sb = new StringBuilder();
-                        RestUtils.fillRequestLogInfo(sb, req);
-                        sb.append("--- request body:\n");
-                        sb.append(reqWrapper.getBody());
-                        RestUtils.fillResponseLogInfo(sb, resp);
-                        sb.append("\n--- response body:\n");
-                        sb.append(respBody);
-                        TRACE_LOGGER.info(sb.toString());
+                        try {
+                            String respBody = respWrapper.writeBody();
+                            final StringBuilder sb = new StringBuilder();
+                            RestUtils.fillRequestLogInfo(sb, req);
+                            sb.append("--- request body:\n");
+                            sb.append(reqWrapper.getBody());
+                            RestUtils.fillResponseLogInfo(sb, resp);
+                            sb.append("\n--- response body:\n");
+                            sb.append(respBody);
+                            TRACE_LOGGER.info(sb.toString());
+                        } catch (Exception ex) {
+                            TRACE_LOGGER.error("log trace info failed",ex);
+                        }
                     }
                 }
             } else {
