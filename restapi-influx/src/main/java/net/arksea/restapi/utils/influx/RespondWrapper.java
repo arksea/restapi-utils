@@ -4,38 +4,39 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
+import java.nio.charset.Charset;
 
 /**
  * Create by xiaohaixing on 2020/6/10
  */
 public class RespondWrapper extends HttpServletResponseWrapper {
 
-    private ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    private ServletOutputStream out;
-    private PrintWriter writer;
+    private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    private final ServletOutputStream out;
+    private final PrintWriter writer;
 
     public RespondWrapper(HttpServletResponse resp) throws IOException {
         super(resp);
+        final ServletOutputStream origin = super.getOutputStream();
         this.out = new ServletOutputStream() {
             @Override
-            public void write(int b) {
+            public void write(int b) throws IOException {
                 buffer.write(b);
+                origin.write(b);
             }
             @Override
-            public void write(byte[] b) {
+            public void write(byte[] b) throws IOException {
                 buffer.write(b, 0, b.length);
+                origin.write(b, 0, b.length);
             }
             @Override
             public boolean isReady() {
-                return false;
+                return origin.isReady();
             }
             @Override
             public void setWriteListener(WriteListener writeListener) {
-                //do nothing
+                origin.setWriteListener(writeListener);
             }
         };
         writer = new PrintWriter(new OutputStreamWriter(out, this.getCharacterEncoding()));
@@ -53,8 +54,8 @@ public class RespondWrapper extends HttpServletResponseWrapper {
 
     @Override
     public void flushBuffer() throws IOException {
-        out.flush();
         writer.flush();
+        out.flush();
     }
 
     @Override
@@ -62,17 +63,11 @@ public class RespondWrapper extends HttpServletResponseWrapper {
         buffer.reset();
     }
 
-    private byte[] getResponseData() throws IOException {
-        flushBuffer();
-        return buffer.toByteArray();
+    public String getRespondBody() throws IOException {
+        return buffer.toString(this.getCharacterEncoding());
     }
 
-    public String writeBody() throws IOException {
-        byte[] body = getResponseData();
-        try(PrintWriter w = super.getWriter()) {
-            w.print(new String(body, this.getCharacterEncoding()));
-            w.flush();
-        }
-        return new String(body, this.getCharacterEncoding());
+    public String getRespondBody(Charset charset) throws IOException {
+        return buffer.toString(charset.name());
     }
 }

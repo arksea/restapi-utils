@@ -5,12 +5,13 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.*;
+import java.nio.charset.Charset;
 
 /**
  * Create by xiaohaixing on 2020/6/9
  */
 public class RequestWrapper extends HttpServletRequestWrapper {
-    private byte[] bodyBytes;
+    private final byte[] bodyBytes;
     public RequestWrapper(HttpServletRequest request) throws IOException {
         super(request);
         try(InputStream reqIn = request.getInputStream()) {
@@ -63,5 +64,9 @@ public class RequestWrapper extends HttpServletRequestWrapper {
 
     public String getBody() throws UnsupportedEncodingException {
         return new String(bodyBytes, this.getCharacterEncoding());
+    }
+
+    public String getBody(Charset charset) {
+        return new String(bodyBytes, charset);
     }
 }

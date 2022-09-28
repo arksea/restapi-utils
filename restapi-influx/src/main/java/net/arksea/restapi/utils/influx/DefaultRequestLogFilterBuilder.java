@@ -11,8 +11,9 @@ import java.util.regex.Pattern;
  * Created by xiaohaixing on 2018/4/4.
  */
 public class DefaultRequestLogFilterBuilder {
-    private final List<String> ignoreUriPrefix;//忽略这些前缀的请求
-    private final List<String> nameUriPrefix;  //带这些前缀的URI直接作为name
+    private final List<String> includedUriPrefix;//包含这些前缀的请求才做记录
+    private final List<String> ignoreUriPrefix; //忽略这些前缀的请求
+    private final List<String> nameUriPrefix;   //带这些前缀的URI直接作为name
     private Pattern uriToNamePattern;
     private int namePatternMatchIndex;
     private String requestGroupHeaderName;
@@ -21,6 +22,7 @@ public class DefaultRequestLogFilterBuilder {
     private Function<ServletRequest,Boolean> traceDeterminer;
 
     public DefaultRequestLogFilterBuilder() {
+        includedUriPrefix = new LinkedList<>();
         ignoreUriPrefix = new LinkedList<>();
         nameUriPrefix = new LinkedList<>();
         //name提取Url前3段
@@ -28,6 +30,11 @@ public class DefaultRequestLogFilterBuilder {
         namePatternMatchIndex = 1;
         requestGroupHeaderName = "x-request-group";
         requestIdHeaderName="x-requestid";
+    }
+
+    public DefaultRequestLogFilterBuilder addIncludedUriPrefix(String uri) {
+        this.includedUriPrefix.add(uri);
+        return this;
     }
 
     public DefaultRequestLogFilterBuilder addIgnoreUriPrefix(String uri) {
@@ -72,7 +79,7 @@ public class DefaultRequestLogFilterBuilder {
             this.traceDeterminer = servletRequest -> false;
         }
         IRequestLogFilterConfig config = new DefaultRequestLogFilterConfig(
-                ignoreUriPrefix,nameUriPrefix,
+                includedUriPrefix,ignoreUriPrefix,nameUriPrefix,
                 uriToNamePattern,namePatternMatchIndex,
                 requestGroupHeaderName, requestIdHeaderName,
                 traceDeterminer);

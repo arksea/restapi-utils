@@ -87,7 +87,7 @@ public class RequestLogFilter implements Filter {
                 try {
                     //如果ContentType不为null，说明Controller为同步模式，此时已返回结果，
                     //如果ContentType为null，说明Controller为异步模式，此时Controller还未实际执行
-                    String respBody = respWrapper.writeBody();
+                    String respBody = respWrapper.getRespondBody();
                     final StringBuilder sb = new StringBuilder();
                     RestUtils.fillRequestLogInfo(sb, req);
                     sb.append("--- request body:\n");
@@ -165,7 +165,7 @@ public class RequestLogFilter implements Filter {
                 if (respWrapper.getContentType() != null) {
                     if (TRACE_LOGGER.isInfoEnabled()) {
                         try {
-                            String respBody = respWrapper.writeBody();
+                            String respBody = respWrapper.getRespondBody();
                             final StringBuilder sb = new StringBuilder();
                             RestUtils.fillRequestLogInfo(sb, req);
                             sb.append("--- request body:\n");

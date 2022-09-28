@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DefaultRequestLogFilterConfig implements IRequestLogFilterConfig {
+    private final List<String> includedUriPrefix; //包含这些前缀的请求才做记录
     private final List<String> ignoreUriPrefix;//忽略这些前缀的请求
     private final List<String> nameUriPrefix;  //带这些前缀的URI直接作为name
     private final Pattern uriToNamePattern;
@@ -21,13 +22,15 @@ public class DefaultRequestLogFilterConfig implements IRequestLogFilterConfig {
     private final String requestIdHeaderName;
     private final Function<ServletRequest,Boolean> traceDeterminer;
 
-    public DefaultRequestLogFilterConfig(final List<String> ignoreUriPrefix,
+    public DefaultRequestLogFilterConfig(final List<String> includedUriPrefix,
+                                         final List<String> ignoreUriPrefix,
                                          final List<String> nameUriPrefix,
                                          final Pattern uriToNamePattern,
                                          final int namePatternMatchIndex,
                                          final String requestGroupHeaderName,
                                          final String requestIdHeaderName,
                                          final Function<ServletRequest,Boolean> traceDeterminer) {
+        this.includedUriPrefix = includedUriPrefix;
         this.ignoreUriPrefix = ignoreUriPrefix;
         this.nameUriPrefix = nameUriPrefix;
         this.uriToNamePattern = uriToNamePattern;
@@ -69,10 +72,26 @@ public class DefaultRequestLogFilterConfig implements IRequestLogFilterConfig {
             return true;
         }
         String uri = req.getRequestURI();
-        for (String pre: ignoreUriPrefix) {
-            if (uri.startsWith(pre)) {
-                return true;
+        boolean needLog = false;
+        //必须至少包含一项比如“/api"，否则不做记录，主要是防止用在web应用上，意外的对资源文件请求进行记录
+        if (includedUriPrefix.isEmpty()) {
+            return true;
+        } else {
+            for (String pre: includedUriPrefix) {
+                if (uri.startsWith(pre)) {
+                    needLog = true;
+                    break;
+                }
             }
+        }
+        if (needLog) {
+            for (String pre : ignoreUriPrefix) {
+                if (uri.startsWith(pre)) {
+                    return true;
+                }
+            }
+        } else {
+            return true;
         }
         return false;
     }
