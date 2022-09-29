@@ -1,5 +1,7 @@
 package net.arksea.restapi.utils.influx;
 
+import org.apache.logging.log4j.LogManager;
+
 import javax.servlet.ServletRequest;
 import java.util.LinkedList;
 import java.util.List;
@@ -83,6 +85,9 @@ public class DefaultRequestLogFilterBuilder {
     public RequestLogFilter build() {
         if (this.tracePredicate == null) {
             this.tracePredicate = (servletRequest, requestBody) -> false;
+        }
+        if (includedUriPrefix.size() == 0) {
+            LogManager.getLogger(DefaultRequestLogFilterBuilder.class).warn("RequestLogFilter not config includedUriPrefix");
         }
         IRequestLogFilterConfig config = new DefaultRequestLogFilterConfig(
                 includedUriPrefix,ignoreUriPrefix,nameUriPrefix,
