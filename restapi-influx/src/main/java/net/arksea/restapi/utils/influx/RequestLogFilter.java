@@ -135,7 +135,13 @@ public class RequestLogFilter implements Filter {
     private void getGroupNameAndDoFilter(final HttpServletRequest req,HttpServletResponse resp,final FilterChain chain) throws IOException {
         long startTime = System.currentTimeMillis();
         req.setAttribute("-restapi-start-time", startTime);
-        boolean needTrace = config.needTrace(req);
+        String requestBody = null;
+        RequestWrapper reqWrapper = null;
+        if (config.isAlwaysWrapRequest()) {
+            reqWrapper = new RequestWrapper(req);
+            requestBody = reqWrapper.getBody();
+        }
+        boolean needTrace = config.needTrace(req, requestBody);
         req.setAttribute("-restapi-need-trace", needTrace); //用于保证每次请求只调用一次config.needTrace(req)
         String name = "unknown";
         String group = "unknown";
@@ -155,7 +161,9 @@ public class RequestLogFilter implements Filter {
         }
         try {
             if (needTrace && TRACE_LOGGER.isInfoEnabled()) {
-                RequestWrapper reqWrapper = new RequestWrapper(req);
+                if (reqWrapper == null) {
+                    reqWrapper = new RequestWrapper(req);
+                }
                 RespondWrapper respWrapper = new RespondWrapper(resp);
                 req.setAttribute("__reqWrapper", reqWrapper); //异步调用时需要暂时先存下来
                 req.setAttribute("__respWrapper", respWrapper); //异步调用时需要暂时先存下来
@@ -180,7 +188,7 @@ public class RequestLogFilter implements Filter {
                     }
                 }
             } else {
-                chain.doFilter(req, resp);
+                chain.doFilter(reqWrapper == null ? req : reqWrapper, resp);
             }
             //当Controller同步返回结果时，ContentType不为null
             //当Controller为异步方法，此时返回respond还未设置结果

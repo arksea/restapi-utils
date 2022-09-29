@@ -3,7 +3,7 @@ package net.arksea.restapi.utils.influx;
 import javax.servlet.ServletRequest;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
 /**
@@ -19,7 +19,8 @@ public class DefaultRequestLogFilterBuilder {
     private String requestGroupHeaderName;
     private String requestIdHeaderName;
     private IRequestLogger requestLogger;
-    private Function<ServletRequest,Boolean> traceDeterminer;
+    private boolean alwaysWrapRequest;
+    private BiPredicate<ServletRequest,String> tracePredicate;
 
     public DefaultRequestLogFilterBuilder() {
         includedUriPrefix = new LinkedList<>();
@@ -68,21 +69,26 @@ public class DefaultRequestLogFilterBuilder {
         return this;
     }
 
-    public DefaultRequestLogFilterBuilder setTraceDeterminer(Function<ServletRequest,Boolean> function) {
-        this.traceDeterminer = function;
+    public DefaultRequestLogFilterBuilder setAlwaysWrapRequest(boolean value) {
+        this.alwaysWrapRequest = value;
+        return this;
+    }
+
+    public DefaultRequestLogFilterBuilder setTracePredicate(BiPredicate<ServletRequest,String> function) {
+        this.tracePredicate = function;
         return this;
     }
 
 
     public RequestLogFilter build() {
-        if (this.traceDeterminer == null) {
-            this.traceDeterminer = servletRequest -> false;
+        if (this.tracePredicate == null) {
+            this.tracePredicate = (servletRequest, requestBody) -> false;
         }
         IRequestLogFilterConfig config = new DefaultRequestLogFilterConfig(
                 includedUriPrefix,ignoreUriPrefix,nameUriPrefix,
                 uriToNamePattern,namePatternMatchIndex,
                 requestGroupHeaderName, requestIdHeaderName,
-                traceDeterminer);
+                alwaysWrapRequest, tracePredicate);
         return new RequestLogFilter(config, this.requestLogger);
     }
 

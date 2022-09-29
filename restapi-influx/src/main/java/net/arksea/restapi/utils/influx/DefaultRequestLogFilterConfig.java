@@ -8,19 +8,20 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DefaultRequestLogFilterConfig implements IRequestLogFilterConfig {
-    private final List<String> includedUriPrefix; //包含这些前缀的请求才做记录
-    private final List<String> ignoreUriPrefix;//忽略这些前缀的请求
-    private final List<String> nameUriPrefix;  //带这些前缀的URI直接作为name
+    private final List<String> includedUriPrefix;//包含这些前缀的请求才做记录
+    private final List<String> ignoreUriPrefix;  //忽略这些前缀的请求
+    private final List<String> nameUriPrefix;    //带这些前缀的URI直接作为name
     private final Pattern uriToNamePattern;
     private final int namePatternMatchIndex;
     private final String requestGroupHeaderName;
     private final String requestIdHeaderName;
-    private final Function<ServletRequest,Boolean> traceDeterminer;
+    private final boolean alwaysWrapRequest;
+    private final BiPredicate<ServletRequest,String> traceDeterminer;
 
     public DefaultRequestLogFilterConfig(final List<String> includedUriPrefix,
                                          final List<String> ignoreUriPrefix,
@@ -29,7 +30,8 @@ public class DefaultRequestLogFilterConfig implements IRequestLogFilterConfig {
                                          final int namePatternMatchIndex,
                                          final String requestGroupHeaderName,
                                          final String requestIdHeaderName,
-                                         final Function<ServletRequest,Boolean> traceDeterminer) {
+                                         final boolean alwaysWrapRequest,
+                                         final BiPredicate<ServletRequest,String> traceDeterminer) {
         this.includedUriPrefix = includedUriPrefix;
         this.ignoreUriPrefix = ignoreUriPrefix;
         this.nameUriPrefix = nameUriPrefix;
@@ -37,6 +39,7 @@ public class DefaultRequestLogFilterConfig implements IRequestLogFilterConfig {
         this.namePatternMatchIndex = namePatternMatchIndex;
         this.requestGroupHeaderName = requestGroupHeaderName;
         this.requestIdHeaderName = requestIdHeaderName;
+        this.alwaysWrapRequest = alwaysWrapRequest;
         this.traceDeterminer = traceDeterminer;
     }
 
@@ -116,7 +119,11 @@ public class DefaultRequestLogFilterConfig implements IRequestLogFilterConfig {
         return RestExceptionHandler.logDebugLevel(status, ex);
     }
     @Override
-    public boolean needTrace(ServletRequest request) {
-        return traceDeterminer.apply(request);
+    public boolean needTrace(ServletRequest request, String requestBody) {
+        return traceDeterminer.test(request, requestBody);
+    }
+    @Override
+    public boolean isAlwaysWrapRequest() {
+        return alwaysWrapRequest;
     }
 }
