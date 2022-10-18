@@ -2,7 +2,7 @@ package net.arksea.restapi.utils.influx;
 
 import org.apache.logging.log4j.LogManager;
 
-import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
  * Created by xiaohaixing on 2018/4/4.
  */
 public class DefaultRequestLogFilterBuilder {
+
     private final List<String> includedUriPrefix;//包含这些前缀的请求才做记录
     private final List<String> ignoreUriPrefix; //忽略这些前缀的请求
     private final List<String> nameUriPrefix;   //带这些前缀的URI直接作为name
@@ -22,14 +23,14 @@ public class DefaultRequestLogFilterBuilder {
     private String requestIdHeaderName;
     private IRequestLogger requestLogger;
     private boolean alwaysWrapRequest;
-    private BiPredicate<ServletRequest,String> tracePredicate;
+    private BiPredicate<HttpServletRequest,Object> tracePredicate;
 
     public DefaultRequestLogFilterBuilder() {
         includedUriPrefix = new LinkedList<>();
         ignoreUriPrefix = new LinkedList<>();
         nameUriPrefix = new LinkedList<>();
         //name提取Url前3段
-        uriToNamePattern = Pattern.compile("(/(?:(?:[^/?]+)(?:/[^/?]+)?(?:/[^/?]+)?))");
+        uriToNamePattern = Pattern.compile(DefaultHttpRequestLogFilterConfig.DEFAULT_URI_TO_NAME_PATTERN);
         namePatternMatchIndex = 1;
         requestGroupHeaderName = "x-request-group";
         requestIdHeaderName="x-requestid";
@@ -76,25 +77,25 @@ public class DefaultRequestLogFilterBuilder {
         return this;
     }
 
-    public DefaultRequestLogFilterBuilder setTracePredicate(BiPredicate<ServletRequest,String> function) {
+    public DefaultRequestLogFilterBuilder setTracePredicate(BiPredicate<HttpServletRequest,Object> function) {
         this.tracePredicate = function;
         return this;
     }
 
 
-    public RequestLogFilter build() {
+    public HttpRequestLogFilter build() {
         if (this.tracePredicate == null) {
             this.tracePredicate = (servletRequest, requestBody) -> false;
         }
-        if (includedUriPrefix.size() == 0) {
+        if (includedUriPrefix.isEmpty()) {
             LogManager.getLogger(DefaultRequestLogFilterBuilder.class).warn("RequestLogFilter not config includedUriPrefix");
         }
-        IRequestLogFilterConfig config = new DefaultRequestLogFilterConfig(
+        IHttpRequestLogFilterConfig config = new DefaultHttpRequestLogFilterConfig(
                 includedUriPrefix,ignoreUriPrefix,nameUriPrefix,
                 uriToNamePattern,namePatternMatchIndex,
                 requestGroupHeaderName, requestIdHeaderName,
                 alwaysWrapRequest, tracePredicate);
-        return new RequestLogFilter(config, this.requestLogger);
+        return new HttpRequestLogFilter(config, this.requestLogger);
     }
 
 }

@@ -2,7 +2,7 @@ package net.arksea.restapi.utils.influx.demo;
 
 import akka.actor.ActorSystem;
 import net.arksea.restapi.utils.influx.IRequestLogger;
-import net.arksea.restapi.utils.influx.RequestLogFilter;
+import net.arksea.restapi.utils.influx.HttpRequestLogFilter;
 import net.arksea.restapi.utils.influx.DefaultRequestLogFilterBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +22,7 @@ public class ServiceFactory {
     }
 
     @Bean(name="logFilter")
-    RequestLogFilter createRequestLogFilter() {
+    HttpRequestLogFilter createRequestLogFilter() {
         IRequestLogger reqLogger = new IRequestLogger() {
             @Override
             public void respond(String uri, String group, int status, long respondTime) {

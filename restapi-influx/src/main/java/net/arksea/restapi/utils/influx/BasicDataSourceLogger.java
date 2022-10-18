@@ -19,6 +19,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  *
  * Created by xiaohaixing on 2020/03/23.
+ *
+ * INSERT <dataSourceName_pool active=0,idle=0
+ * INSERT <dataSourceName>_getConnect request=0,succeed=0,failed=0,responedTime=0
  */
 public class BasicDataSourceLogger implements DataSource {
 
@@ -76,25 +79,21 @@ public class BasicDataSourceLogger implements DataSource {
         long respond1 = failed.getAndSet(0);
         long respondCount = respond0 + respond1;
         long responedTime = respondCount == 0 ? 0 : respondTime.getAndSet(0) / respondCount;
-        if (req>0 || respondCount>0) {
-            sb.append("getConnect").append(",group=").append(dataSourceName)
-                    .append(" request=").append(req)
-                    .append(",succeed=").append(respond0)
-                    .append(",failed=").append(respond1)
-                    .append(",responedTime=").append(responedTime)
-                    .append("\n");
-            String body = sb.toString();
-            httpRequest(body);
-        }
+        sb.append(dataSourceName).append("_getConnect")
+                .append(" request=").append(req)
+                .append(",succeed=").append(respond0)
+                .append(",failed=").append(respond1)
+                .append(",responedTime=").append(responedTime)
+                .append("\n");
+        String body = sb.toString();
+        httpRequest(body);
     }
 
     public void writeLogsPool() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("dataSource").append(",group=").append(dataSourceName)
-                .append(" active=").append(dataSource.getNumActive())
-                .append(",idle=").append(dataSource.getNumIdle())
-                .append("\n");
-        String body = sb.toString();
+        String body = dataSourceName + "_pool" +
+                " active=" + dataSource.getNumActive() +
+                ",idle=" + dataSource.getNumIdle() +
+                "\n";
         httpRequest(body);
     }
 

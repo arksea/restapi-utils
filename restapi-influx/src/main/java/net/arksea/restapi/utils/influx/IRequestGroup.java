@@ -5,4 +5,4 @@ package net.arksea.restapi.utils.influx;
  */
 //改名遗留,请直接使用IRequestLogFilterConfig
 @Deprecated()
-public interface IRequestGroup extends IRequestLogFilterConfig {}
+public interface IRequestGroup extends IHttpRequestLogFilterConfig {}
