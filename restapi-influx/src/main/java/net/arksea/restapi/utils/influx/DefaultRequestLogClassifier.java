@@ -19,6 +19,7 @@ public class DefaultRequestLogClassifier implements IRequestLogClassifier {
             targetMethods.add(m.getName());
         }
     }
+    @Override
     public String getGroupByMethodName(String methodName) {
         if (methodName.startsWith("find") || methodName.startsWith("get") || methodName.startsWith("select")) {
             return "select,method="+methodName;
@@ -32,6 +33,7 @@ public class DefaultRequestLogClassifier implements IRequestLogClassifier {
             return "other,method="+methodName;
         }
     }
+    @Override
     public boolean needLog(String methodName) {
         return targetMethods.contains(methodName);
     }

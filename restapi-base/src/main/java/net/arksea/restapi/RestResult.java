@@ -28,4 +28,8 @@ public class RestResult<T> extends BaseResult {
         super(code, httpRequest);
         this.result = result;
     }
+
+    public T getResult() {
+        return result;
+    }
 }

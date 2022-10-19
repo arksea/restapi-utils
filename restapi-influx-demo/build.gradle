@@ -9,18 +9,19 @@ sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 dependencies {
-    compile project(':restapi-base')
-    compile project(':restapi-influx')
-    compile 'org.springframework:spring-core:4.3.9.RELEASE'
-    compile 'org.springframework:spring-context:4.3.9.RELEASE'
-    compile 'org.springframework:spring-context-support:4.3.9.RELEASE'
-    compile 'org.springframework:spring-webmvc:4.3.9.RELEASE'
-    compile 'commons-codec:commons-codec:1.9'
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.6.0'
-    compile 'org.codehaus.groovy:groovy-all:2.4.4'
-    testCompile 'junit:junit:4.11'
-    testCompile 'org.springframework:spring-test:4.2.2.RELEASE'
-    providedCompile  'javax.servlet:javax.servlet-api:3.1.0'
+    implementation project(':restapi-base')
+    implementation project(':restapi-influx')
+    implementation "org.springframework:spring-core:$springVer"
+    implementation "org.springframework:spring-context:$springVer"
+    implementation "org.springframework:spring-context-support:$springVer"
+    implementation "org.springframework:spring-webmvc:$springVer"
+    implementation 'commons-codec:commons-codec:1.15'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2.1'
+    implementation 'org.codehaus.groovy:groovy-all:2.4.4'
+    implementation 'com.typesafe.akka:akka-actor_2.12:2.5.11'
+    testImplementation 'junit:junit:4.11'
+    testImplementation "org.springframework:spring-test:$springVer"
+    compileOnly  'javax.servlet:javax.servlet-api:3.1.0'
 }
 
 

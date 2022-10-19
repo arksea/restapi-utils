@@ -19,6 +19,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  *
  * Created by xiaohaixing on 2020/03/23.
+ *
+ * INSERT <dataSourceName_pool active=0,idle=0
+ * INSERT <dataSourceName>_getConnect request=0,succeed=0,failed=0,responedTime=0
  */
 public class BasicDataSourceLogger implements DataSource {
 
@@ -26,8 +29,6 @@ public class BasicDataSourceLogger implements DataSource {
     private final FuturedHttpClient futuredHttpClient;
     private static final int timeout = 10000;
     private final AtomicLong logCount = new AtomicLong(0L);
-    private final AtomicLong logSucceedCount = new AtomicLong(0L);
-    private volatile String error;
 
     AtomicLong requestCount = new AtomicLong(0);
     AtomicLong respondTime = new AtomicLong(0);  //请求响应时间
@@ -45,18 +46,6 @@ public class BasicDataSourceLogger implements DataSource {
         this.dbUrl = dbUrl;
     }
 
-    public double getLogSuccessRate() {
-        long c = logCount.get();
-        long s = logSucceedCount.get();
-        if (c > 0) {
-            return s*1.0 / c;
-        } else {
-            return 0.0;
-        }
-    }
-    public String getLastError() {
-        return error;
-    }
     public long getLogCount() {
         return logCount.get();
     }
@@ -90,25 +79,21 @@ public class BasicDataSourceLogger implements DataSource {
         long respond1 = failed.getAndSet(0);
         long respondCount = respond0 + respond1;
         long responedTime = respondCount == 0 ? 0 : respondTime.getAndSet(0) / respondCount;
-        if (req>0 || respondCount>0) {
-            sb.append("getConnect").append(",group=").append(dataSourceName)
-                    .append(" request=").append(req)
-                    .append(",succeed=").append(respond0)
-                    .append(",failed=").append(respond1)
-                    .append(",responedTime=").append(responedTime)
-                    .append("\n");
-            String body = sb.toString();
-            httpRequest(body);
-        }
+        sb.append(dataSourceName).append("_getConnect")
+                .append(" request=").append(req)
+                .append(",succeed=").append(respond0)
+                .append(",failed=").append(respond1)
+                .append(",responedTime=").append(responedTime)
+                .append("\n");
+        String body = sb.toString();
+        httpRequest(body);
     }
 
     public void writeLogsPool() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("dataSource").append(",group=").append(dataSourceName)
-                .append(" active=").append(dataSource.getNumActive())
-                .append(",idle=").append(dataSource.getNumIdle())
-                .append("\n");
-        String body = sb.toString();
+        String body = dataSourceName + "_pool" +
+                " active=" + dataSource.getNumActive() +
+                ",idle=" + dataSource.getNumIdle() +
+                "\n";
         httpRequest(body);
     }
 
@@ -119,19 +104,9 @@ public class BasicDataSourceLogger implements DataSource {
         logCount.incrementAndGet();
         futuredHttpClient.ask(post, "request", timeout).onComplete(
             new OnComplete<HttpResult>() {
-                public void onComplete(Throwable ex, HttpResult ret) throws Throwable {
-                    if (ex == null) {
-                        if (ret.error == null) {
-                            int code = ret.response.getStatusLine().getStatusCode();
-                            if (code == 204 || code == 200) {
-                                logSucceedCount.incrementAndGet();
-                            } else {
-                                error = ret.value;
-                            }
-                        } else {
-                            error = ret.error.getMessage();
-                        }
-                    }
+                @Override
+                public void onComplete(Throwable ex, HttpResult ret) {
+                    //do nothing
                 }
             },futuredHttpClient.system.dispatcher());
     }

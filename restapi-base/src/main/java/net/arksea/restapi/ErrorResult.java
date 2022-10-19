@@ -18,4 +18,8 @@ public class ErrorResult<T> extends BaseResult {
         super(code, httpRequest);
         this.error = error;
     }
+
+    public String getError() {
+        return error;
+    }
 }

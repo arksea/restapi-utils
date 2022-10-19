@@ -7,10 +7,10 @@ import java.lang.reflect.Method;
  * Create by xiaohaixing on 2020/8/11
  */
 public class RequestLogProxy<T extends U, U> implements InvocationHandler {
-    private final T target;
-    private final String logName;
-    private final IRequestLogger requestLogger;
-    private final IRequestLogClassifier logClassifier;
+    private transient final T target;
+    private transient final String logName;
+    private transient final IRequestLogger requestLogger;
+    private transient final IRequestLogClassifier logClassifier;
 
     public RequestLogProxy(IRequestLogger requestLogger, T target, String logName, IRequestLogClassifier logClassifier) {
         this.target = target;
@@ -31,7 +31,7 @@ public class RequestLogProxy<T extends U, U> implements InvocationHandler {
                 long useTime = System.currentTimeMillis() - start;
                 requestLogger.respond(logName, group, 200, useTime);
                 return ret;
-            } catch (Throwable ex) {
+            } catch (Exception ex) {
                 long useTime = System.currentTimeMillis() - start;
                 requestLogger.respond(logName, group, 500, useTime);
                 throw ex;

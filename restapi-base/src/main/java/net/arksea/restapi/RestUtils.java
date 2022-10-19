@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.context.request.WebRequest;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.Enumeration;
 import java.util.Iterator;
 
@@ -15,6 +16,7 @@ import java.util.Iterator;
  *
  * Created by xiaohaixing_dian91 on 2016/11/25.
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public final class RestUtils {
     public static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -97,7 +99,7 @@ public final class RestUtils {
         } else {
             sb.append(ex.getMessage());
         }
-        sb.append("\nstatus: ").append(status.toString());
+        sb.append("\n---status: ").append(status.toString());
         if (!StringUtils.isEmpty(extDetail)) {
             sb.append("\n").append(extDetail);
         }
@@ -114,7 +116,7 @@ public final class RestUtils {
         } else {
             sb.append(ex.getMessage());
         }
-        sb.append("\nstatus: ").append(status.toString());
+        sb.append("\n--- status: ").append(status.toString());
         if (!StringUtils.isEmpty(extDetail)) {
             sb.append("\n").append(extDetail);
         }
@@ -124,15 +126,15 @@ public final class RestUtils {
     }
 
     public static void fillRequestLogInfo(final StringBuilder sb, final WebRequest req) {
-        sb.append("request: ").append(req.getDescription(true));
-        sb.append("\nparams: \n");
+        sb.append("\n--- request uri: ").append(req.getDescription(true));
+        sb.append("\n--- request params: \n");
         Iterator<String> it = req.getParameterNames();
         while (it.hasNext()) {
             String name = it.next();
             String value = req.getParameter(name);
             sb.append("  ").append(name).append(": ").append(value).append("\n");
         }
-        sb.append("headers: \n");
+        sb.append("--- request headers: \n");
         it = req.getHeaderNames();
         while(it.hasNext()) {
             String name = it.next();
@@ -141,20 +143,27 @@ public final class RestUtils {
         }
     }
     public static void fillRequestLogInfo(final StringBuilder sb, final HttpServletRequest req) {
-        sb.append("request: uri=").append(req.getRequestURI())
-          .append(";client=").append(req.getRemoteAddr());
-        sb.append("\nparams: \n");
+        sb.append("\n--- request uri: ").append(req.getRequestURI())
+          .append("\n--- request client: ").append(req.getRemoteAddr());
+        sb.append("\n--- request params: \n");
         Enumeration<String> it = req.getParameterNames();
         while (it.hasMoreElements()) {
             String name = it.nextElement();
             String value = req.getParameter(name);
             sb.append("  ").append(name).append(": ").append(value).append("\n");
         }
-        sb.append("headers: \n");
+        sb.append("--- request headers: \n");
         it = req.getHeaderNames();
         while(it.hasMoreElements()) {
             String name = it.nextElement();
             String value = req.getHeader(name);
+            sb.append("  ").append(name).append(": ").append(value).append("\n");
+        }
+    }
+    public static void fillResponseLogInfo(final StringBuilder sb, final HttpServletResponse resp) {
+        sb.append("\n--- response headers: \n");
+        for (String name : resp.getHeaderNames()) {
+            String value = resp.getHeader(name);
             sb.append("  ").append(name).append(": ").append(value).append("\n");
         }
     }
