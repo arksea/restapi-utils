@@ -139,15 +139,13 @@ public class HttpRequestLogFilter implements Filter {
     private void getGroupNameAndDoFilter(final HttpServletRequest req,HttpServletResponse resp,final FilterChain chain) throws IOException {
         long startTime = System.currentTimeMillis();
         req.setAttribute("-restapi-start-time", startTime);
-        String requestBody = null;
         RequestWrapper reqWrapper = null;
         Object handledWrapper = null;
         if (config.isAlwaysWrapRequest()) {
             reqWrapper = new RequestWrapper(req);
-            requestBody = reqWrapper.getBody();
             handledWrapper = config.afterRequestWrapper(req, reqWrapper);
         }
-        boolean needTrace = config.needTrace(req, requestBody);
+        boolean needTrace = config.needTrace(req, handledWrapper);
         req.setAttribute("-restapi-need-trace", needTrace); //用于保证每次请求只调用一次config.needTrace(req)
         String name = "unknown";
         String group = "unknown";
