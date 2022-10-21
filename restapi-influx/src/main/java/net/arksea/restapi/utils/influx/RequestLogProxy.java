@@ -26,14 +26,13 @@ public class RequestLogProxy<T extends U, U> implements InvocationHandler {
             long start = System.currentTimeMillis();
             String group = logClassifier.getGroupByMethodName(methodName);
             try {
-                requestLogger.request(logName, group);
                 Object ret = method.invoke(target, args);
                 long useTime = System.currentTimeMillis() - start;
-                requestLogger.respond(logName, group, 200, useTime);
+                requestLogger.monitor(logName, group, 200, useTime);
                 return ret;
             } catch (Exception ex) {
                 long useTime = System.currentTimeMillis() - start;
-                requestLogger.respond(logName, group, 500, useTime);
+                requestLogger.monitor(logName, group, 500, useTime);
                 throw ex;
             }
         } else {

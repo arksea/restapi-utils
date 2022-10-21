@@ -8,13 +8,14 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import zipkin2.Span;
 
 /**
  *
  * Created by xiaohaixing on 2017/5/20.
  */
 public class HttpRequestLogger extends AbstractRequestLogger {
-
+    private static final Logger TRACE_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.traceLogger");
     private static final Logger logger = LogManager.getLogger(HttpRequestLogger.class);
     private transient final FuturedHttpClient futuredHttpClient;
     private static final int timeout = 10000;
@@ -116,6 +117,18 @@ public class HttpRequestLogger extends AbstractRequestLogger {
             return true;
         } else {
             return false;
+        }
+    }
+
+    @Override
+    public void trace(Span span) {
+        if (TRACE_LOGGER.isInfoEnabled()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("\n--- span tags: \n");
+            span.tags().forEach((name, value) -> {
+                sb.append("  --- ").append(name).append(": \n    ").append(value).append("\n");
+            });
+            TRACE_LOGGER.info(sb.toString());
         }
     }
 }

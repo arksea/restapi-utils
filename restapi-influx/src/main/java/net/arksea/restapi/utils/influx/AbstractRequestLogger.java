@@ -27,9 +27,10 @@ public abstract class AbstractRequestLogger implements IRequestLogger {
     }
 
     @Override
-    public void respond(String uri, String group, int status, long respondTime) {
-        logger.trace("Trace AbstractRequestLogger.respond: uri={},group={},status={},time={}",uri,group,status,respondTime,new Exception("trace"));
-        Counter counter = getCounter(uri, group);
+    public void monitor(String name, String group, int status, long respondTime) {
+        logger.trace("Trace AbstractRequestLogger.monitor: name={},group={},status={},time={}",name,group,status,respondTime,new Exception("trace"));
+        Counter counter = getCounter(name, group);
+        counter.requestCount.incrementAndGet();
         counter.respondTime.addAndGet(respondTime);
         if (status >= 300 && status < 400) {
             counter.respond3xx.incrementAndGet();
@@ -40,13 +41,6 @@ public abstract class AbstractRequestLogger implements IRequestLogger {
         } else {
             counter.respond2xx.incrementAndGet();
         }
-    }
-
-    @Override
-    public void request(String uri, String group) {
-        logger.trace("Trace AbstractRequestLogger.request: uri={},group={}",uri,group,new Exception("trace"));
-        Counter counter = getCounter(uri, group);
-        counter.requestCount.incrementAndGet();
     }
 
     private Counter getCounter(String name, String group) {

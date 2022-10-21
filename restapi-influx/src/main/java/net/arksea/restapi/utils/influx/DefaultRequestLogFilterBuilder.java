@@ -2,10 +2,8 @@ package net.arksea.restapi.utils.influx;
 
 import org.apache.logging.log4j.LogManager;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.BiPredicate;
 import java.util.regex.Pattern;
 
 /**
@@ -23,7 +21,6 @@ public class DefaultRequestLogFilterBuilder {
     private String requestIdHeaderName;
     private IRequestLogger requestLogger;
     private boolean alwaysWrapRequest;
-    private BiPredicate<HttpServletRequest,Object> tracePredicate;
 
     public DefaultRequestLogFilterBuilder() {
         includedUriPrefix = new LinkedList<>();
@@ -77,16 +74,7 @@ public class DefaultRequestLogFilterBuilder {
         return this;
     }
 
-    public DefaultRequestLogFilterBuilder setTracePredicate(BiPredicate<HttpServletRequest,Object> function) {
-        this.tracePredicate = function;
-        return this;
-    }
-
-
     public HttpRequestLogFilter build() {
-        if (this.tracePredicate == null) {
-            this.tracePredicate = (servletRequest, requestBody) -> false;
-        }
         if (includedUriPrefix.isEmpty()) {
             LogManager.getLogger(DefaultRequestLogFilterBuilder.class).warn("RequestLogFilter not config includedUriPrefix");
         }
@@ -94,7 +82,7 @@ public class DefaultRequestLogFilterBuilder {
                 includedUriPrefix,ignoreUriPrefix,nameUriPrefix,
                 uriToNamePattern,namePatternMatchIndex,
                 requestGroupHeaderName, requestIdHeaderName,
-                alwaysWrapRequest, tracePredicate);
+                alwaysWrapRequest);
         return new HttpRequestLogFilter(config, this.requestLogger);
     }
 

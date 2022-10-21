@@ -12,8 +12,10 @@ import java.nio.charset.Charset;
  */
 public class RequestWrapper extends HttpServletRequestWrapper {
     private final byte[] bodyBytes;
+    private final Charset charset;
     public RequestWrapper(HttpServletRequest request) throws IOException {
         super(request);
+        charset = Charset.forName(request.getCharacterEncoding());
         try(InputStream reqIn = request.getInputStream()) {
             if (reqIn == null) {
                 bodyBytes = new byte[0];
@@ -62,8 +64,8 @@ public class RequestWrapper extends HttpServletRequestWrapper {
         return new BufferedReader(new InputStreamReader(getInputStream()));
     }
 
-    public String getBody() throws UnsupportedEncodingException {
-        return new String(bodyBytes, this.getCharacterEncoding());
+    public String getBody() {
+        return new String(bodyBytes, this.charset);
     }
 
     public String getBody(Charset charset) {

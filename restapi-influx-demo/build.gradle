@@ -11,6 +11,7 @@ targetCompatibility = '1.8'
 dependencies {
     implementation project(':restapi-base')
     implementation project(':restapi-influx')
+    implementation 'io.zipkin.reporter2:zipkin-reporter:2.16.3'
     implementation "org.springframework:spring-core:$springVer"
     implementation "org.springframework:spring-context:$springVer"
     implementation "org.springframework:spring-context-support:$springVer"
@@ -40,7 +41,7 @@ task publishDev {
             into './tomcat/webapps/demo'
         }
         copy{ //拷贝依赖库
-            from configurations.runtime
+            from configurations.runtimeClasspath
             into './tomcat/webapps/demo/WEB-INF/lib'
         }
         delete('tomcat/webapps/demo/WEB-INF/lib/xml-apis-1.0.b2.jar')
@@ -72,4 +73,5 @@ task startTomcat(type: Exec) {
     workingDir './tomcat'
     commandLine 'cmd', '/c', '.\\bin\\startup.bat'
     environment CATALINA_HOME: 'e:\\github\\restapi-utils\\restapi-influx-demo\\tomcat'
+    environment REMOTE_DEBUG: '-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005'
 }

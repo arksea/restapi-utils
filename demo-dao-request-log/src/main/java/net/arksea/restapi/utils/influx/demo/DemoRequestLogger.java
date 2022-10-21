@@ -19,6 +19,10 @@ public class DemoRequestLogger extends AbstractRequestLogger {
     }
 
     @Override
+    public void trace(zipkin2.Span span) {
+    }
+
+    @Override
     public void writeLogs() {
         StringBuilder sb = new StringBuilder();
         countMap.entrySet().forEach(e -> {

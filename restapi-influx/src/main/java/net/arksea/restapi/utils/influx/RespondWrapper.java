@@ -15,7 +15,6 @@ public class RespondWrapper extends HttpServletResponseWrapper {
     private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     private final ServletOutputStream out;
     private final PrintWriter writer;
-
     public RespondWrapper(HttpServletResponse resp) throws IOException {
         super(resp);
         final ServletOutputStream origin = super.getOutputStream();
@@ -63,11 +62,19 @@ public class RespondWrapper extends HttpServletResponseWrapper {
         buffer.reset();
     }
 
-    public String getRespondBody() throws IOException {
-        return buffer.toString(this.getCharacterEncoding());
+    public String getRespondBody() {
+        try {
+            return buffer.toString(this.getCharacterEncoding());
+        } catch (UnsupportedEncodingException ex) {
+            return buffer.toString();
+        }
     }
 
-    public String getRespondBody(Charset charset) throws IOException {
-        return buffer.toString(charset.name());
+    public String getRespondBody(Charset charset) {
+        try {
+            return buffer.toString(charset.name());
+        } catch (UnsupportedEncodingException ex) {
+            return buffer.toString();
+        }
     }
 }

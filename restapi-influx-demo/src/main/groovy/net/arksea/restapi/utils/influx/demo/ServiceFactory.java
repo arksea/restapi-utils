@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+import zipkin2.Span;
 
 /**
  *
@@ -25,21 +26,24 @@ public class ServiceFactory {
     HttpRequestLogFilter createRequestLogFilter() {
         IRequestLogger reqLogger = new IRequestLogger() {
             @Override
-            public void respond(String uri, String group, int status, long respondTime) {
-                logger.info("RequestLogger.respond: uri={},group={},status={},time={}",uri,group,status,respondTime);
+            public void monitor(String uri, String group, int status, long respondTime) {
+                logger.info("RequestLogger.monitor: uri={},group={},status={},time={}",uri,group,status,respondTime);
             }
             @Override
-            public void request(String uri, String group) {
-                logger.info("RequestLogger.request: uri={},group={}",uri,group);
+            public void trace(Span span) {
+                logger.info("RequestLogger.trace: span={}",span);
             }
+
             @Override
             public void writeLogs() {
                 logger.info("RequestLogger.writeLogs");
             }
         };
         return new DefaultRequestLogFilterBuilder()
+                .addIncludedUriPrefix("/api")
                 .addIgnoreUriPrefix("/heartbeat")
                 .setRequestGroupHeaderName("x-product-id")
+                .setAlwaysWrapRequest(true)
                 .setRequestLogger(reqLogger)
                 .build();
     }

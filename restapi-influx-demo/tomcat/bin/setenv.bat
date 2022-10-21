@@ -1,1 +1,1 @@
-set JAVA_OPTS=-Dfile.encoding=utf-8 -Dspring.profiles.active="development"
+set JAVA_OPTS=%REMOTE_DEBUG1% -Dfile.encoding=utf-8 -Dspring.profiles.active="development"
