@@ -1,12 +1,16 @@
 package net.arksea.restapi.utils.influx;
 
+import javax.servlet.ServletRequest;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * b3-propagation
  * https://github.com/openzipkin/b3-propagation
  */
 public class HttpTraceInfo {
+    static final String TRACE_INFO_ATTRIBUTE_NAME = "-restapi-trace-info";
     private String requestName = "unknown";
     private String requestGroup  = "unknown";
     private String traceId;
@@ -14,7 +18,15 @@ public class HttpTraceInfo {
     private String parentSpanId;
     private String sampled;
     private String flags;
-    private Map<String, String> tags;
+    private Map<String, String> tags = new HashMap<>();
+
+    public static HttpTraceInfo get(final ServletRequest req) {
+        return (HttpTraceInfo)req.getAttribute(HttpTraceInfo.TRACE_INFO_ATTRIBUTE_NAME);
+    }
+
+    public static String makeSpanId() {
+        return UUID.randomUUID().toString().replaceAll("-","").substring(0,16);
+    }
 
     public String getRequestName() {
         return requestName;
@@ -76,8 +88,12 @@ public class HttpTraceInfo {
         return tags;
     }
 
-    public void setTags(Map<String, String> tags) {
-        this.tags = tags;
+    public void addTags(Map<String, String> tags) {
+        this.tags.putAll(tags);
+    }
+
+    public void addTag(String key, String value) {
+        this.tags.put(key, value);
     }
 
     public boolean needSampled() {

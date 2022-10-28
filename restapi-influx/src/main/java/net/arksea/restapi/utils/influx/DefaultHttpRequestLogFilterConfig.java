@@ -7,10 +7,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +22,9 @@ public class DefaultHttpRequestLogFilterConfig implements IHttpRequestLogFilterC
     private final String requestGroupHeaderName;
     private final String requestIdHeaderName;
     private final boolean alwaysWrapRequest;
+    //默认采样间隔1分钟
+    protected AtomicLong lastSampledTime = new AtomicLong(0);
+    private long defaultSampleInterval = 60_000;
 
     public DefaultHttpRequestLogFilterConfig(final List<String> includedUriPrefix,
                                              final List<String> ignoreUriPrefix,
@@ -137,8 +138,21 @@ public class DefaultHttpRequestLogFilterConfig implements IHttpRequestLogFilterC
         HttpTraceInfo info = new HttpTraceInfo();
         String traceId = makeSpanId();
         info.setTraceId(traceId);
+        long now = System.currentTimeMillis();
+        String sampled = req.getHeader("X-B3-Sampled");
+        if (sampled == null) {
+            if (now - lastSampledTime.get() > defaultSampleInterval) {
+                lastSampledTime.set(now);
+                info.setSampled("1");
+            } else {
+                info.setSampled("0");
+            }
+        } else {
+            info.setSampled(sampled);
+        }
+        //根节点无parentId
+        //根节点以traceId为id
         info.setSpanId(traceId);
-        info.setSampled("1");
         info.setRequestName(getName(req));
         info.setRequestGroup(getGroup(req));
         return info;
@@ -162,21 +176,21 @@ public class DefaultHttpRequestLogFilterConfig implements IHttpRequestLogFilterC
         String sampled = req.getHeader("X-B3-Sampled");
         String flags = req.getHeader("X-B3-Flags");
         HttpTraceInfo info;
-        //没有值，说明是root节点，自行生成
+        //没有值，说明是根节点，自行生成
         if (traceId == null) {
             info = makeRootTraceInfo(req,requestWrapper);
         } else {
             info = new HttpTraceInfo();
             info.setTraceId(traceId);
-            info.setParentSpanId(parentId);
-            info.setSpanId(spanId);
+            //非根Server节点parentId与Client相同，否则以TracieId作为parentId
+            info.setParentSpanId(parentId==null?traceId:parentId);
+            //非根Server节点id与Client相同，否则新生成一个id
+            info.setSpanId(spanId==null?traceId:makeSpanId());
             info.setSampled(sampled);
             info.setFlags(flags);
             info.setRequestName(getName(req));
             info.setRequestGroup(getGroup(req));
         }
-        Map<String,String> tags = new HashMap<>();
-        info.setTags(tags);
         return info;
     }
 
@@ -193,6 +207,14 @@ public class DefaultHttpRequestLogFilterConfig implements IHttpRequestLogFilterC
     }
     @Override
     public String makeSpanId() {
-        return UUID.randomUUID().toString().replaceAll("-","").substring(0,16);
+        return HttpTraceInfo.makeSpanId();
+    }
+
+    public long getDefaultSampleInterval() {
+        return defaultSampleInterval;
+    }
+
+    public void setDefaultSampleInterval(long defaultSampleInterval) {
+        this.defaultSampleInterval = defaultSampleInterval;
     }
 }

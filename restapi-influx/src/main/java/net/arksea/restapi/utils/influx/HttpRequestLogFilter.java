@@ -22,10 +22,10 @@ import java.util.Map;
 public class HttpRequestLogFilter implements Filter {
     private static final Logger LOGGER = LogManager.getLogger("net.arksea.restapi.logger.InternalError");
     private static final Logger BADREQ_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.BadRequest");
-
     private final IRequestLogger requestLogger;
     private final IHttpRequestLogFilterConfig config;
     private final Object lock = new Object();
+    private Timer timer = new TimerImplOffset();
 
     public HttpRequestLogFilter(IHttpRequestLogFilterConfig config) {
         this(config, null);
@@ -83,16 +83,16 @@ public class HttpRequestLogFilter implements Filter {
             //<dispatcher>REQUEST</dispatcher>
             //Attribute "-restapi-start-time" 用于判断是否是第一次dispatcher
             //所以在onRequestDispatcher时必须设置此Attribute
-            onRequestDispatcher(req, resp, chain);
+            onFirstDispatcher(req, resp, chain);
         } else {
             //第二次dispatcher，针对web.xml的ASYNC配置：
             //<dispatcher>ASYNC</dispatcher>
-            onAsyncDispatcher(req, resp, chain);
+            onSecondDispatcher(req, resp, chain);
         }
     }
 
-    private void onRequestDispatcher(final HttpServletRequest req, HttpServletResponse resp, final FilterChain chain) throws IOException, ServletException {
-        long startTime = System.currentTimeMillis();
+    private void onFirstDispatcher(final HttpServletRequest req, HttpServletResponse resp, final FilterChain chain) throws IOException, ServletException {
+        long startTime = timer.nowMicro();
         req.setAttribute("-restapi-start-time", startTime);
         HttpTraceInfo traceInfo;
         RequestWrapper reqWrapper = null;
@@ -102,7 +102,7 @@ public class HttpRequestLogFilter implements Filter {
                 req.setAttribute("__reqWrapper", reqWrapper); //异步调用时需要,暂时先存下来
             }
             traceInfo = config.tracePrejudgement(req, reqWrapper);
-            req.setAttribute("-restapi-trace-info", traceInfo);
+            req.setAttribute(HttpTraceInfo.TRACE_INFO_ATTRIBUTE_NAME, traceInfo);
         } catch (Exception ex) {
             chain.doFilter(req, resp);
             return;
@@ -119,8 +119,10 @@ public class HttpRequestLogFilter implements Filter {
                 //如果ContentType不为null，说明Controller为同步模式，此时已返回结果，
                 //如果ContentType为null，说明Controller为异步模式，此时Controller还未实际执行
                 if (respWrapper.getContentType() != null) {
-                    long respondTime = System.currentTimeMillis() - startTime;
-                    if (config.deferDetermineSampled(req, resp, reqWrapper, respWrapper, traceInfo)) {
+                    long respondTime = timer.nowMicro() - startTime;
+                    boolean sampled = config.deferDetermineSampled(req, resp, reqWrapper, respWrapper, traceInfo);
+                    traceInfo.setSampled(sampled ? "1" : "0");
+                    if (sampled) {
                         reportTrace(req, traceInfo, startTime, respondTime);
                     }
                 }
@@ -133,7 +135,7 @@ public class HttpRequestLogFilter implements Filter {
             //    Handler中 return new ResponseEntity<Object>(body, headers, status), status可以在此处取到
             if (requestLogger != null && resp.getContentType() != null) {
                 int status = resp.getStatus();
-                long respondTime = System.currentTimeMillis() - startTime;
+                long respondTime = (timer.nowMicro() - startTime)/1000;
                 requestLogger.monitor(traceInfo.getRequestName(), traceInfo.getRequestGroup(), status, respondTime);
             }
         } catch (Exception ex) {
@@ -142,19 +144,19 @@ public class HttpRequestLogFilter implements Filter {
         }
     }
 
-    public void onAsyncDispatcher(final HttpServletRequest req, HttpServletResponse resp, final FilterChain chain) throws IOException, ServletException {
+    public void onSecondDispatcher(final HttpServletRequest req, HttpServletResponse resp, final FilterChain chain) throws IOException, ServletException {
         Long requestStartTime = (Long) req.getAttribute("-restapi-start-time");
         //1、当Controller为异步方法，在设置respond结果后，无论是正确的结果还是错误的结果，ASYNC的doFilter将被调用，逻辑将走到此处
         //2、当Controller为异步方法，在Controller超时没有设置结果时，ASYNC的doFilter会被调用，逻辑将走到此处
-        HttpTraceInfo traceInfo = (HttpTraceInfo)req.getAttribute("-restapi-trace-info");
+        HttpTraceInfo traceInfo = (HttpTraceInfo)req.getAttribute(HttpTraceInfo.TRACE_INFO_ATTRIBUTE_NAME);
         if (traceInfo!=null && traceInfo.needSampled()) {
             RequestWrapper reqWrapper = (RequestWrapper) req.getAttribute("__reqWrapper");
             RespondWrapper respWrapper = (RespondWrapper)req.getAttribute("__respWrapper");
             chain.doFilter(reqWrapper, respWrapper);
-            //如果ContentType不为null，说明Controller为同步模式，此时已返回结果，
-            //如果ContentType为null，说明Controller为异步模式，此时Controller还未实际执行
-            long respondTime = System.currentTimeMillis() - requestStartTime;
-            if (config.deferDetermineSampled(req, resp, reqWrapper, respWrapper, traceInfo)) {
+            long respondTime = timer.nowMicro() - requestStartTime;
+            boolean sampled = config.deferDetermineSampled(req, resp, reqWrapper, respWrapper, traceInfo);
+            traceInfo.setSampled(sampled ? "1" : "0");
+            if (sampled) {
                 reportTrace(req, traceInfo, requestStartTime, respondTime);
             }
         } else {
@@ -164,8 +166,9 @@ public class HttpRequestLogFilter implements Filter {
             int status = resp.getStatus();
             if (status >= 400 && status <= 600 && req.getAttribute("-restapi-error-logged") == null) { //RestExceptionHandler未记录此异常，时写一条日志
                 //何时出现
-                //1、没有配置RestExceptionHandler时
-                //2、使用异步模式，DeferredResult.setResult一个status不为200的结果时，
+                //1、当Controller抛出异常，但没有配置RestExceptionHandler时
+                //2、当Controller抛出异常，但配置的RestExceptionHandler没有Cache到这个异常
+                //3、使用异步模式，DeferredResult.setResult一个status不为200的结果时，
                 //   而非DeferredResult.setErrorResult一个异常(这种情况RestExceptionHandler将会拦截到这个异常并处理)
                 HttpStatus retStatus = HttpStatus.valueOf(status);
                 RestException ex = new RestException("error result");
@@ -177,7 +180,7 @@ public class HttpRequestLogFilter implements Filter {
                     LOGGER.warn(alarmMsg, ex);
                 }
             }
-            long respondTime = System.currentTimeMillis() - requestStartTime;
+            long respondTime = (timer.nowMicro() - requestStartTime)/1000;
             requestLogger.monitor(traceInfo.getRequestName(), traceInfo.getRequestGroup(), status, respondTime);
         }
     }
@@ -202,7 +205,7 @@ public class HttpRequestLogFilter implements Filter {
             }
             Span span = sb.traceId(traceInfo.getTraceId())
                     .parentId(traceInfo.getParentSpanId())
-                    .id(config.makeSpanId())
+                    .id(traceInfo.getSpanId())
                     .kind(Span.Kind.SERVER)
                     .name(req.getMethod() + " " + req.getRequestURI())
                     .timestamp(startTime)
@@ -224,7 +227,7 @@ public class HttpRequestLogFilter implements Filter {
             LOGGER.warn(()->RestUtils.getRequestLogInfo(ex, HttpStatus.INTERNAL_SERVER_ERROR, req, ""), ex);
         }
         if (requestLogger != null) {
-            requestLogger.monitor(name, group, HttpStatus.INTERNAL_SERVER_ERROR.value(), System.currentTimeMillis() - startTime);
+            requestLogger.monitor(name, group, HttpStatus.INTERNAL_SERVER_ERROR.value(), (timer.nowMicro() - startTime)/1000);
         }
         resultError(HttpStatus.INTERNAL_SERVER_ERROR, ex, req, resp);
     }

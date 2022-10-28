@@ -17,11 +17,11 @@ import zipkin2.Span;
 public class HttpRequestLogger extends AbstractRequestLogger {
     private static final Logger TRACE_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.traceLogger");
     private static final Logger logger = LogManager.getLogger(HttpRequestLogger.class);
-    private transient final FuturedHttpClient futuredHttpClient;
     private static final int timeout = 10000;
 
-    private transient final String dbUrl;
-    private transient final String tableName;
+    private final FuturedHttpClient futuredHttpClient;
+    private final String dbUrl;
+    private final String tableName;
     private long lastLogErrorTime = 0;
     private long lastLogSucceedTime = 0;
 
@@ -124,9 +124,17 @@ public class HttpRequestLogger extends AbstractRequestLogger {
     public void trace(Span span) {
         if (TRACE_LOGGER.isInfoEnabled()) {
             StringBuilder sb = new StringBuilder();
-            sb.append("\n--- span tags: \n");
+            sb.append("=== traceId: ").append(span.traceId())
+              .append("\n=== parentId: ").append(span.parentId())
+              .append("\n=== spanId: ").append(span.id())
+              .append("\n=== kind: ").append(span.kind())
+              .append("\n=== name: ").append(span.name())
+              .append("\n=== timestamp: ").append(span.timestamp())
+              .append("\n=== duration: ").append(span.duration())
+              .append("\n=== localEndpoint: ").append(span.localEndpoint())
+              .append("\n=== remoteEndpoint: ").append(span.remoteEndpoint());
             span.tags().forEach((name, value) -> {
-                sb.append("  --- ").append(name).append(": \n    ").append(value).append("\n");
+                sb.append("\n=== ").append(name).append(": ").append(value);
             });
             TRACE_LOGGER.info(sb.toString());
         }
