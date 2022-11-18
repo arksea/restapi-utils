@@ -20,12 +20,16 @@ import java.util.Map;
  * Created by xiaohaixing on 2018/4/2.
  */
 public class HttpRequestLogFilter implements Filter {
-    private static final Logger LOGGER = LogManager.getLogger("net.arksea.restapi.logger.InternalError");
-    private static final Logger BADREQ_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.BadRequest");
-    private final IRequestLogger requestLogger;
-    private final IHttpRequestLogFilterConfig config;
-    private final Object lock = new Object();
-    private Timer timer = new TimerImplOffset();
+    protected static final Logger LOGGER = LogManager.getLogger("net.arksea.restapi.logger.InternalError");
+    protected static final Logger BADREQ_LOGGER = LogManager.getLogger("net.arksea.restapi.logger.BadRequest");
+    protected IRequestLogger requestLogger;
+    protected IHttpRequestLogFilterConfig config;
+    protected Object lock = new Object();
+    protected Timer timer = new TimerImplOffset();
+
+    protected HttpRequestLogFilter() {
+        //do nothing
+    }
 
     public HttpRequestLogFilter(IHttpRequestLogFilterConfig config) {
         this(config, null);
@@ -39,7 +43,7 @@ public class HttpRequestLogFilter implements Filter {
         }
     }
 
-    private void startWrite(IRequestLogger requestLogger) {
+    protected void startWrite(IRequestLogger requestLogger) {
         final Thread writeThread = new Thread(new Runnable() {
             @Override
             public void run() {

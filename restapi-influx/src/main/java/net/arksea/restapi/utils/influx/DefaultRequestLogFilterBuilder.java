@@ -12,15 +12,15 @@ import java.util.regex.Pattern;
  */
 public class DefaultRequestLogFilterBuilder {
 
-    private final List<String> includedUriPrefix;//包含这些前缀的请求才做记录
-    private final List<String> ignoreUriPrefix; //忽略这些前缀的请求
-    private final List<String> nameUriPrefix;   //带这些前缀的URI直接作为name
-    private Pattern uriToNamePattern;
-    private int namePatternMatchIndex;
-    private String requestGroupHeaderName;
-    private String requestIdHeaderName;
-    private IRequestLogger requestLogger;
-    private boolean alwaysWrapRequest;
+    protected final List<String> includedUriPrefix;//包含这些前缀的请求才做记录
+    protected final List<String> ignoreUriPrefix; //忽略这些前缀的请求
+    protected final List<String> nameUriPrefix;   //带这些前缀的URI直接作为name
+    protected Pattern uriToNamePattern;
+    protected int namePatternMatchIndex;
+    protected String requestGroupHeaderName;
+    protected String requestIdHeaderName;
+    protected IRequestLogger requestLogger;
+    protected boolean alwaysWrapRequest;
 
     public DefaultRequestLogFilterBuilder() {
         includedUriPrefix = new LinkedList<>();
@@ -86,4 +86,14 @@ public class DefaultRequestLogFilterBuilder {
         return new HttpRequestLogFilter(config, this.requestLogger);
     }
 
+    public IHttpRequestLogFilterConfig config() {
+        if (includedUriPrefix.isEmpty()) {
+            LogManager.getLogger(DefaultRequestLogFilterBuilder.class).warn("RequestLogFilter not config includedUriPrefix");
+        }
+        return new DefaultHttpRequestLogFilterConfig(
+                includedUriPrefix,ignoreUriPrefix,nameUriPrefix,
+                uriToNamePattern,namePatternMatchIndex,
+                requestGroupHeaderName, requestIdHeaderName,
+                alwaysWrapRequest);
+    }
 }

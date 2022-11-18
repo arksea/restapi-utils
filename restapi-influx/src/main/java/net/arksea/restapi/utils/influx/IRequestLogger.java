@@ -7,7 +7,7 @@ import zipkin2.Span;
  * Created by xiaohaixing on 2018/4/2.
  */
 public interface IRequestLogger {
-    void monitor(String name, String group, int status, long duration);
-    void trace(Span span);
-    void writeLogs();
+    default void monitor(String name, String group, int status, long duration) {}
+    default void trace(Span span) {}
+    default void writeLogs() {}
 }
