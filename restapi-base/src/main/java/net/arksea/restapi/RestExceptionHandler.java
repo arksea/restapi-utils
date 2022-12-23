@@ -114,8 +114,7 @@ public class RestExceptionHandler {
     }
 
     public ResponseEntity<?> handle(final Exception ex, int code, final HttpStatus status, final WebRequest request, final String extDetail) {
-
-        String alarmMsg = RestUtils.getRequestLogInfo(ex,status,request,extDetail);
+        String alarmMsg = RestUtils.getRequestLogInfo(ex,status,code, request,extDetail);
         //外部错误日志用debug级别
         HttpStatus retStatus = getStatus(status, ex);
         if (logDebugLevel(retStatus, ex)) {

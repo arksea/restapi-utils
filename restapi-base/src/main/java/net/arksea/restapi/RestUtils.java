@@ -108,7 +108,7 @@ public final class RestUtils {
         return sb.toString();
     }
 
-    public static String getRequestLogInfo(final Throwable ex, final HttpStatus status, final WebRequest request,
+    public static String getRequestLogInfo(final Throwable ex, final HttpStatus status, final int code, final WebRequest request,
                                            final String extDetail) {
         final StringBuilder sb = new StringBuilder();
         if (StringUtils.isEmpty(ex.getMessage())) {
@@ -117,6 +117,7 @@ public final class RestUtils {
             sb.append(ex.getMessage());
         }
         sb.append("\n--- status: ").append(status.toString());
+        sb.append("\n--- code: ").append(code);
         if (!StringUtils.isEmpty(extDetail)) {
             sb.append("\n").append(extDetail);
         }

@@ -76,6 +76,7 @@ public class HttpRequestLogFilter implements Filter {
     //一个在收到request时调用，另一个在获得respond结果时调用
     @Override
     public void doFilter(final ServletRequest request, final ServletResponse response, final FilterChain chain) throws IOException, ServletException {
+        LOGGER.trace("doFilter()");
         final HttpServletRequest req = (HttpServletRequest) request;
         final HttpServletResponse resp = (HttpServletResponse) response;
         if (config.ignore(req)) {
@@ -96,6 +97,7 @@ public class HttpRequestLogFilter implements Filter {
     }
 
     private void onFirstDispatcher(final HttpServletRequest req, HttpServletResponse resp, final FilterChain chain) throws IOException, ServletException {
+        LOGGER.trace("onFirstDispatcher()");
         long startTime = timer.nowMicro();
         req.setAttribute("-restapi-start-time", startTime);
         HttpTraceInfo traceInfo;
@@ -149,6 +151,7 @@ public class HttpRequestLogFilter implements Filter {
     }
 
     public void onSecondDispatcher(final HttpServletRequest req, HttpServletResponse resp, final FilterChain chain) throws IOException, ServletException {
+        LOGGER.trace("onSecondDispatcher()");
         Long requestStartTime = (Long) req.getAttribute("-restapi-start-time");
         //1、当Controller为异步方法，在设置respond结果后，无论是正确的结果还是错误的结果，ASYNC的doFilter将被调用，逻辑将走到此处
         //2、当Controller为异步方法，在Controller超时没有设置结果时，ASYNC的doFilter会被调用，逻辑将走到此处
@@ -193,6 +196,7 @@ public class HttpRequestLogFilter implements Filter {
                              HttpTraceInfo traceInfo,
                              long startTime, long duration) {
         try {
+            LOGGER.trace("reportTrace()");
             Endpoint localEndpoint = Endpoint.newBuilder()
                     .serviceName(req.getServerName())
                     .ip(req.getLocalAddr())
@@ -225,6 +229,7 @@ public class HttpRequestLogFilter implements Filter {
 
     private void handleException(Throwable ex, String name, String group, long startTime,
                                  HttpServletRequest req,HttpServletResponse resp) throws IOException {
+        LOGGER.trace("handleException()");
         if (config.logDebugLevel(HttpStatus.INTERNAL_SERVER_ERROR, ex)) {
             BADREQ_LOGGER.debug(()->RestUtils.getRequestLogInfo(ex, HttpStatus.INTERNAL_SERVER_ERROR, req, ""), ex);
         } else {
@@ -237,6 +242,7 @@ public class HttpRequestLogFilter implements Filter {
     }
 
     private void resultError(HttpStatus status, Throwable ex, HttpServletRequest request, HttpServletResponse httpResponse) throws IOException {
+        LOGGER.trace("resultError");
         PrintWriter out = null;
         try {
             httpResponse.setStatus(status.value());
