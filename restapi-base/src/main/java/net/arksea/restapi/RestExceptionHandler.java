@@ -136,18 +136,15 @@ public class RestExceptionHandler {
     }
 
     public static boolean logDebugLevel(int value, Throwable ex) {
-        if (value >= 400 && value < 500) {
+        if (value < 500) {
             return true;
         }
         if (ex instanceof RestException) {
             RestException r = (RestException)ex;
-            if ("debug".equalsIgnoreCase(r.getLabel())) {
-                return true;
-            }
-        } else if (ex instanceof NestedServletException && ex.getCause() instanceof HttpMessageNotReadableException) {
-            return true;
+            return "debug".equalsIgnoreCase(r.getLabel());
+        } else {
+            return ex instanceof NestedServletException && ex.getCause() instanceof HttpMessageNotReadableException;
         }
-        return false;
     }
 
     public static HttpStatus getStatus(HttpStatus status, Throwable ex) {
